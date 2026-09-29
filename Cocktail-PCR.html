@@ -1,0 +1,2000 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#141A1F">
+<style>:root{color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Cocktail PCR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* Layout : rail de navigation (le protocole) + colonne de lecture ~72ch. Post-its jaunes = températures et durées, comme dans le cours. */
+:root{
+  --bg:#EDF0F1; --paper:#FFFFFF; --ink:#141A1F; --muted:#55616B; --rule:#D3DADF; --soft:#E4E9EC;
+  --accent:#FFD23F; --accent-ink:#241B00; --accent-text:#855C00;
+  --good:#1C7C3A; --good-bg:#E1F2E5; --bad:#B3261E; --bad-bg:#FBE5E3;
+  --dna:#1F6FC0; --target:#D7261E; --fwd:#6A2C91; --fwd-ext:#1E9B4B; --rev:#CF62CF; --rev-ext:#86C878;
+  --t95:#D7261E; --t72:#E8902A; --tta:#D9AE00;
+  --gel:#1A1E28; --gel-band:#F2F6FF; --gel-well:#05070B;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  --f-hand:"Caveat","Segoe Print","Comic Sans MS",cursive;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1316; --paper:#161D22; --ink:#E4E9ED; --muted:#9CA8B2; --rule:#2B353C; --soft:#1E272D;
+    --accent:#FFD23F; --accent-ink:#241B00; --accent-text:#FFD23F;
+    --good:#62CF84; --good-bg:#12301C; --bad:#FF7B70; --bad-bg:#3A1714;
+    --dna:#5AA2EE; --target:#FF5A50; --fwd:#B783E4; --fwd-ext:#43C473; --rev:#EBA0EB; --rev-ext:#7DBD71;
+    --t95:#FF5A50; --t72:#F2A450; --tta:#F0C62E;
+    --gel:#0A0D13; --gel-band:#F2F6FF; --gel-well:#000000;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1316; --paper:#161D22; --ink:#E4E9ED; --muted:#9CA8B2; --rule:#2B353C; --soft:#1E272D;
+  --accent:#FFD23F; --accent-ink:#241B00; --accent-text:#FFD23F;
+  --good:#62CF84; --good-bg:#12301C; --bad:#FF7B70; --bad-bg:#3A1714;
+  --dna:#5AA2EE; --target:#FF5A50; --fwd:#B783E4; --fwd-ext:#43C473; --rev:#EBA0EB; --rev-ext:#7DBD71;
+  --t95:#FF5A50; --t72:#F2A450; --tta:#F0C62E;
+  --gel:#0A0D13; --gel-band:#F2F6FF; --gel-well:#000000;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 16px/1.62 var(--f-body);-webkit-font-smoothing:antialiased}
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+a{color:var(--accent-text);text-underline-offset:2px}
+:focus-visible{outline:2.5px solid var(--dna);outline-offset:2px;border-radius:4px}
+code,.mono{font-family:var(--f-mono)}
+b,strong{font-weight:600}
+sup,sub{line-height:0}
+
+/* ---------- structure ---------- */
+.app{display:grid;grid-template-columns:272px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;overflow:auto;background:var(--paper);border-right:1px solid var(--rule);padding:22px 16px 20px;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;gap:10px;align-items:center;text-decoration:none;color:var(--ink)}
+.brand b{display:block;font:700 1.55rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.02em}
+.brand small{display:block;font:500 .72rem/1.3 var(--f-mono);color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+.ic-cap{fill:var(--ink)} .ic-tube{fill:none;stroke:var(--ink);stroke-width:1.6} .ic-liquid{fill:var(--accent)}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:grid;grid-template-columns:2rem minmax(0,1fr) auto;align-items:center;gap:6px;padding:7px 8px;border-radius:7px;color:var(--ink);text-decoration:none;font-size:.92rem;line-height:1.25}
+.nav a:hover{background:var(--soft)}
+.nav a[aria-current="page"]{background:var(--ink);color:var(--paper)}
+.nav .n{font:600 .95rem/1 var(--f-display);text-align:center;border:1.5px solid currentColor;border-radius:5px;padding:3px 0}
+.nav .sep{height:1px;background:var(--rule);margin:8px 4px}
+.st{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--muted)}
+.st.half{background:linear-gradient(90deg,var(--muted) 50%,transparent 50%)}
+.st.full{background:var(--good);border-color:var(--good)}
+.side-score{margin-top:auto;border-top:1px solid var(--rule);padding-top:14px}
+.side-score .lbl{font:500 .7rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.side-score .big{font:600 1.9rem/1.1 var(--f-display);font-variant-numeric:tabular-nums}
+.meter{height:6px;border-radius:3px;background:var(--soft);overflow:hidden;margin-top:6px}
+.meter i{display:block;height:100%;width:0;background:var(--good);transition:width .3s}
+.tiny{font-size:.78rem;color:var(--muted);margin:6px 0 0}
+main{min-width:0;padding-block:40px 80px;padding-inline:clamp(16px,4vw,56px)}
+.view{max-width:800px;margin:0 auto}
+
+@media (max-width:900px){
+  .app{display:block}
+  .side{position:sticky;top:env(safe-area-inset-top,0px);height:auto;z-index:20;flex-direction:column;gap:8px;padding:10px 16px 8px;border-right:0;border-bottom:1px solid var(--rule)}
+  .brand svg{width:22px;height:26px}
+  .brand b{font-size:1.25rem}
+  .brand small{display:none}
+  .top-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .nav{flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px;scrollbar-width:thin}
+  .nav a{display:flex;white-space:nowrap;padding:6px 10px;border:1px solid var(--rule)}
+  .nav a .lbl{display:none}
+  .nav a.keep .lbl{display:inline}
+  .nav .sep{display:none}
+  .nav .st{display:none}
+  .nav a .n{border:0;padding:0;font-size:1rem}
+  .nav a:not(.keep) .n::before{content:"Bloc "}
+  [data-fig="profile"] svg{min-width:560px}
+  .side-score{margin:0;border:0;padding:0;text-align:right}
+  .side-score .big{font-size:1.2rem}
+  .side-score .meter,.side-score .tiny,.side-score .lbl{display:none}
+  main{padding-block:24px 64px}
+}
+@media (min-width:901px){.top-row{display:contents}.brand{order:1}.nav{order:2}.side-score{order:3}}
+.box.formula{text-align:center}
+.box.formula p{font:600 clamp(1.15rem,3.6vw,1.75rem)/1.3 var(--f-mono);margin:6px auto 14px;max-width:none;text-transform:none}
+
+/* ---------- typographie ---------- */
+.eyebrow{font:500 .74rem/1.4 var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+h1,h2{font-family:var(--f-display);text-transform:uppercase;letter-spacing:.01em;text-wrap:balance;line-height:1.02;margin:0}
+h1{font-weight:700;font-size:clamp(2.2rem,5.5vw,3.3rem)}
+h2{font-weight:600;font-size:clamp(1.45rem,3.4vw,1.9rem);margin-top:52px;margin-bottom:14px;display:flex;gap:12px;align-items:baseline}
+h2 .num{font-family:var(--f-mono);font-size:.9rem;font-weight:500;color:var(--muted);letter-spacing:0}
+h3{font-size:1.06rem;font-weight:600;margin:28px 0 8px;text-wrap:balance}
+p{margin:0 0 14px;max-width:70ch}
+ul,ol{margin:0 0 14px;padding-left:1.3rem;max-width:70ch}
+li{margin-bottom:5px}
+.lede{font-size:1.1rem;color:var(--ink);max-width:62ch}
+.muted{color:var(--muted)}
+.prep{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:14px 0 0;font-size:.85rem;color:var(--muted)}
+.chip{display:inline-block;font:500 .78rem/1 var(--f-mono);padding:5px 8px;border-radius:4px;border:1px solid var(--rule);background:var(--paper);color:var(--ink);text-decoration:none}
+a.chip:hover{border-color:var(--ink)}
+.view-head{padding-bottom:22px;border-bottom:2px solid var(--ink);margin-bottom:10px}
+.view-head .lede{margin-top:14px}
+
+/* ---------- éléments de cours ---------- */
+.post-it{display:inline-block;background:var(--accent);color:var(--accent-ink);font:700 1.35rem/1 var(--f-hand);padding:7px 11px 6px;transform:rotate(-2deg);box-shadow:0 1px 0 rgba(0,0,0,.08),0 8px 14px -9px rgba(0,0,0,.45);white-space:nowrap}
+.post-it.r{transform:rotate(1.6deg)}
+.post-row{display:flex;flex-wrap:wrap;gap:14px 12px;align-items:center;margin:4px 0 18px}
+.box{position:relative;border:1.5px solid var(--ink);background:var(--paper);border-radius:3px;padding:22px 20px 8px;margin:26px 0 20px}
+.box>.tab{position:absolute;top:-.8em;left:14px;background:var(--ink);color:var(--paper);font:600 .72rem/1 var(--f-mono);letter-spacing:.09em;text-transform:uppercase;padding:5px 8px;border-radius:2px}
+.box.method{background:var(--soft);border-style:dashed}
+.box.quote p{font:600 1.35rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.01em;max-width:none}
+.box ul,.box ol{max-width:none}
+.seq{font-family:var(--f-mono);font-size:.92em;letter-spacing:.05em;background:var(--soft);padding:1px 5px;border-radius:3px;word-break:break-all}
+.seqblock{font-family:var(--f-mono);font-size:.9rem;letter-spacing:.05em;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:12px 14px;overflow-x:auto;white-space:pre;line-height:1.7;margin:0 0 14px}
+.seqwrap{font-family:var(--f-mono);font-size:.88rem;letter-spacing:.06em;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:12px 14px;word-break:break-all;line-height:1.75;margin:0 0 14px}
+.tg{color:var(--target);font-weight:600}
+mark{background:var(--accent);color:var(--accent-ink);padding:0 1px;border-radius:2px}
+.hl-f{color:var(--fwd);font-weight:600} .hl-r{color:var(--rev);font-weight:600}
+.tblwrap{overflow-x:auto;margin:6px 0 18px;border:1px solid var(--rule);border-radius:6px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:.93rem}
+th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:600 .72rem/1.3 var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--muted);background:var(--soft)}
+tr:last-child td{border-bottom:0}
+td.num,th.num{font-variant-numeric:tabular-nums;text-align:right}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:10px 0 18px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:10px 0 18px}
+@media (max-width:640px){.grid2,.grid3{grid-template-columns:minmax(0,1fr)}}
+.cell{background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;min-width:0}
+.cell h4{margin:0 0 4px;font:600 1.15rem/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.02em}
+.cell p{margin:0;font-size:.93rem}
+figure{margin:18px 0 22px}
+figcaption{font-size:.84rem;color:var(--muted);margin-top:8px;max-width:70ch}
+.fig{background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:14px;overflow-x:auto}
+.fig svg{display:block;width:100%;height:auto}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.8rem;color:var(--muted);margin-top:10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:18px;height:5px;border-radius:3px}
+
+/* svg ADN */
+.k-dna{stroke:var(--dna);fill:var(--dna)} .k-tg{stroke:var(--target);fill:var(--target)}
+.k-f{stroke:var(--fwd);fill:var(--fwd)} .k-fe{stroke:var(--fwd-ext);fill:var(--fwd-ext)}
+.k-r{stroke:var(--rev);fill:var(--rev)} .k-re{stroke:var(--rev-ext);fill:var(--rev-ext)}
+svg line.s{stroke-width:5;stroke-linecap:round}
+svg polygon{stroke:none}
+.tick{stroke:var(--muted);stroke-width:1.1}
+.halo{fill:var(--accent);opacity:.5}
+.lab{fill:var(--muted);font:500 10px var(--f-mono)}
+.lab-ink{fill:var(--ink);font:500 11px var(--f-mono)}
+.lab-b{fill:var(--ink);font:600 12px var(--f-body)}
+.axis{stroke:var(--ink);stroke-width:1.4;fill:none}
+.grid-l{stroke:var(--rule);stroke-width:1}
+.dash{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:4 4;fill:none}
+.curve{stroke:var(--ink);stroke-width:2.5;fill:none}
+.pf-line{stroke:var(--muted);stroke-width:1.6;fill:none}
+.pf-95{stroke:var(--t95);stroke-width:6;stroke-linecap:round}
+.pf-72{stroke:var(--t72);stroke-width:6;stroke-linecap:round}
+.pf-ta{stroke:var(--tta);stroke-width:6;stroke-linecap:round}
+.pf-brk{stroke:var(--muted);stroke-width:1.6;stroke-dasharray:3 5;fill:none}
+.pf-t{fill:var(--muted);font:500 11px var(--f-mono)}
+.pf-h{fill:var(--ink);font:700 17px var(--f-hand)}
+.gel-bg{fill:var(--gel)} .gel-band{fill:var(--gel-band)} .gel-well{fill:var(--gel-well);opacity:.9}
+.gel-lab{fill:var(--ink);font:500 11px var(--f-mono)} .gel-pole{fill:var(--ink);font:600 15px var(--f-mono)}
+.gel-size{fill:var(--muted);font:500 10.5px var(--f-mono)} .gel-arrow{stroke:var(--target);stroke-width:1.6;fill:none}
+.gel-arrowhead{fill:var(--target)}
+
+/* ---------- boutons & formulaires ---------- */
+.btn{appearance:none;border:1.5px solid var(--ink);background:var(--ink);color:var(--paper);font:600 .9rem/1 var(--f-body);padding:10px 14px;border-radius:7px;cursor:pointer}
+.btn:hover{filter:brightness(1.12)}
+.btn-accent{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn-ghost{background:transparent;color:var(--ink);border-color:var(--rule)}
+.btn-ghost:hover{border-color:var(--ink);filter:none}
+.btn:disabled{opacity:.45;cursor:default}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+input[type=text],input[type=number],select,textarea{font:inherit;color:var(--ink);background:var(--paper);border:1.5px solid var(--rule);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+input[type=text].seqin{font-family:var(--f-mono);letter-spacing:.05em;text-transform:uppercase}
+textarea{min-height:92px;resize:vertical;line-height:1.5}
+input:focus,select:focus,textarea:focus{border-color:var(--dna);outline:none}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:.86rem;font-weight:500;min-width:0}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:12px 0}
+fieldset{border:1px solid var(--rule);border-radius:6px;padding:10px 12px;margin:0;min-width:0}
+legend{font-size:.84rem;font-weight:600;padding:0 4px}
+.radio{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:.92rem;cursor:pointer}
+.radio input{margin-top:5px;accent-color:var(--ink)}
+.radio code{word-break:break-all}
+.ok-mark{color:var(--good);font-weight:700} .ko-mark{color:var(--bad);font-weight:700}
+.fb{border-radius:7px;padding:12px 14px;margin-top:14px;font-size:.93rem;border:1.5px solid var(--rule);background:var(--paper)}
+.fb.ok{border-color:var(--good);background:var(--good-bg)}
+.fb.ko{border-color:var(--bad);background:var(--bad-bg)}
+.fb.neutral{background:var(--soft)}
+.fb p:last-child,.fb ul:last-child{margin-bottom:0}
+.fb ul{padding-left:1.1rem}
+details{border:1px solid var(--rule);border-radius:7px;background:var(--paper);margin:10px 0}
+details>summary{cursor:pointer;padding:10px 14px;font-weight:600;font-size:.92rem;list-style:none;display:flex;gap:8px;align-items:center}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"+";font-family:var(--f-mono);width:1rem;color:var(--muted)}
+details[open]>summary::before{content:"−"}
+details>.inner{padding:2px 16px 14px;border-top:1px solid var(--rule)}
+details.corr{border-color:var(--ink)}
+details.corr>summary{background:var(--soft)}
+
+/* ---------- questions ouvertes ---------- */
+.oq{margin:16px 0 22px}
+.oq .q{font-weight:500;margin-bottom:8px}
+.oq .q b{font-family:var(--f-mono);margin-right:4px}
+
+/* ---------- QCM ---------- */
+.qcm{border:2px solid var(--ink);background:var(--paper);border-radius:10px;padding:18px;margin:14px 0 10px}
+.qcm-top{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:center;padding-bottom:12px;border-bottom:1px solid var(--rule);margin-bottom:16px}
+.qcm-top .t{font:600 1.15rem/1 var(--f-display);text-transform:uppercase;letter-spacing:.02em}
+.qcm-top .sc{font:500 .84rem var(--f-mono);font-variant-numeric:tabular-nums}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--soft);border:1px solid var(--rule)}
+.dots i.cur{border-color:var(--ink);background:var(--paper);box-shadow:0 0 0 1.5px var(--ink)}
+.dots i.g{background:var(--good);border-color:var(--good)} .dots i.b{background:var(--bad);border-color:var(--bad)}
+.qtext{font-size:1.05rem;font-weight:600;margin-bottom:14px;max-width:none}
+.opts{list-style:none;padding:0;margin:0;display:grid;gap:8px;max-width:none}
+.opt{width:100%;display:grid;grid-template-columns:2.1rem minmax(0,1fr);gap:10px;align-items:center;text-align:left;border:1.5px solid var(--rule);background:var(--paper);color:var(--ink);border-radius:8px;padding:10px 12px;font:inherit;font-size:.95rem;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--ink)}
+.opt:disabled{cursor:default;opacity:1}
+.opt .L{font:600 .95rem/1 var(--f-mono);width:1.9rem;height:1.9rem;display:grid;place-items:center;border:1.5px solid currentColor;border-radius:50%}
+.opt.is-ok{border-color:var(--good);background:var(--good-bg)} .opt.is-ok .L{background:var(--good);color:var(--paper);border-color:var(--good)}
+.opt.is-ko{border-color:var(--bad);background:var(--bad-bg)} .opt.is-ko .L{background:var(--bad);color:var(--paper);border-color:var(--bad)}
+.opt.dim{opacity:.6}
+.hintbox{margin-top:12px;font-size:.9rem;background:var(--soft);border-radius:6px;padding:10px 12px}
+.why{list-style:none;padding:0;margin:12px 0 0;display:grid;gap:8px;max-width:none}
+.why li{display:grid;grid-template-columns:1.9rem minmax(0,1fr);gap:10px;font-size:.9rem;margin:0}
+.why .L{font:600 .85rem/1.7 var(--f-mono);text-align:center}
+.verdict{font-weight:600;margin:14px 0 0}
+.verdict.ok{color:var(--good)} .verdict.ko{color:var(--bad)}
+.qcm-end{text-align:left}
+.qcm-end .score{font:700 3rem/1 var(--f-display);font-variant-numeric:tabular-nums}
+
+/* ---------- accueil ---------- */
+.hero h1{font-size:clamp(3rem,10vw,5.6rem);line-height:.9}
+.hero .lede{margin-top:16px}
+.path{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;max-width:none}
+.path li{margin:0;background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:16px;min-width:0}
+.path .k{font:500 .72rem var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.path h4{font:600 1.35rem/1.05 var(--f-display);text-transform:uppercase;margin:6px 0 6px}
+.path p{font-size:.9rem;margin:0 0 10px}
+@media (max-width:700px){.path{grid-template-columns:minmax(0,1fr)}}
+.blocks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:640px){.blocks{grid-template-columns:minmax(0,1fr)}}
+.bcard{display:grid;grid-template-columns:3rem minmax(0,1fr);gap:12px;align-items:start;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:8px;padding:14px}
+.bcard:hover{border-color:var(--ink)}
+.bcard .bn{font:700 2.2rem/1 var(--f-display)}
+.bcard .bt{font-weight:600;line-height:1.3}
+.bcard .bs{font:500 .76rem var(--f-mono);color:var(--muted);margin-top:4px}
+.bcard .bm{height:4px;background:var(--soft);border-radius:2px;margin-top:8px;overflow:hidden}
+.bcard .bm i{display:block;height:100%;background:var(--good)}
+
+/* ---------- simulateur ---------- */
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{appearance:none;border:1.5px solid var(--rule);background:var(--paper);color:var(--ink);font:500 .84rem/1 var(--f-body);padding:8px 11px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.sim-ctrl{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.sim-stats{display:flex;flex-wrap:wrap;gap:6px 18px;font:500 .86rem var(--f-mono);margin:4px 0 10px}
+.sim-stats b{font-size:1.05rem}
+.sim-cap{font-size:.92rem;margin:10px 0 0;max-width:none}
+
+/* ---------- tube & courbe ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.chips button{appearance:none;border:1.5px dashed var(--muted);background:var(--paper);color:var(--ink);font:500 .9rem var(--f-body);padding:8px 12px;border-radius:999px;cursor:pointer}
+.chips button[aria-pressed="true"]{border-style:solid;border-color:var(--ink);background:var(--accent);color:var(--accent-ink)}
+.chips button.good{border-color:var(--good);border-style:solid} .chips button.bad{border-color:var(--bad);border-style:solid}
+.range{display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.range input{flex:1 1 200px;accent-color:var(--ink)}
+.readout{font:600 .95rem var(--f-mono);font-variant-numeric:tabular-nums}
+
+/* ---------- atelier & TD ---------- */
+.drill,.ex{background:var(--paper);border:1.5px solid var(--rule);border-radius:10px;padding:18px;margin:18px 0 26px;scroll-margin-top:90px}
+.drill h3,.ex h3{margin-top:0;font:600 1.45rem/1.05 var(--f-display);text-transform:uppercase;letter-spacing:.01em}
+.d-stat{font:500 .78rem var(--f-mono);color:var(--muted);margin:0}
+.d-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:4px 14px;align-items:baseline}
+.pair p{margin:4px 0}
+.tag{display:inline-block;font:600 .72rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);min-width:6.4rem}
+.toc{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 4px}
+.statement{background:var(--soft);border-radius:7px;padding:14px 16px;margin:8px 0 14px}
+.statement p:last-child{margin-bottom:0}
+.arrow-r,.arrow-l{display:inline-block;height:2px;vertical-align:middle;position:relative}
+.arrow-r{background:var(--fwd)} .arrow-l{background:var(--rev)}
+.arrow-r::after{content:"";position:absolute;right:-2px;top:-5px;border:6px solid transparent;border-left:9px solid var(--fwd);border-right:0}
+.arrow-l::before{content:"";position:absolute;left:-2px;top:-5px;border:6px solid transparent;border-right:9px solid var(--rev);border-left:0}
+.confirm{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+
+<div class="app">
+<aside class="side" aria-label="Navigation">
+  <div class="top-row">
+    <a class="brand" href="#accueil" data-go="accueil">
+      <svg viewBox="0 0 32 40" width="28" height="35" aria-hidden="true"><rect x="6" y="2" width="20" height="5" rx="1.6" class="ic-cap"/><path d="M8.5 8.5h15l-2.2 19.5c-.5 4.6-2.6 9-5.3 9s-4.8-4.4-5.3-9z" class="ic-tube"/><path d="M10 19h12l-1 9c-.4 3.6-2.2 7-5 7s-4.6-3.4-5-7z" class="ic-liquid"/></svg>
+      <span><b>Cocktail PCR</b><small>Révisions · L1 SV</small></span>
+    </a>
+    <div class="side-score" aria-live="polite">
+      <div class="lbl">Score QCM</div>
+      <div class="big"><span id="gscore">0</span> <span class="muted" style="font-size:.6em">/ <span id="gmax">0</span></span></div>
+      <div class="meter"><i id="gbar"></i></div>
+      <p class="tiny">+1 bonne réponse · −0,5 erreur</p>
+    </div>
+  </div>
+  <nav class="nav" id="nav">
+    <a href="#accueil" data-go="accueil" class="keep"><span class="n">⌂</span><span class="lbl">Accueil</span><span></span></a>
+    <span class="sep"></span>
+    <a href="#bloc1" data-go="bloc1"><span class="n">1</span><span class="lbl">ADN, réplication, principe</span><span class="st" data-st="b1"></span></a>
+    <a href="#bloc2" data-go="bloc2"><span class="n">2</span><span class="lbl">Le cocktail PCR</span><span class="st" data-st="b2"></span></a>
+    <a href="#bloc3" data-go="bloc3"><span class="n">3</span><span class="lbl">Programmer une PCR</span><span class="st" data-st="b3"></span></a>
+    <a href="#bloc4" data-go="bloc4"><span class="n">4</span><span class="lbl">Les cycles</span><span class="st" data-st="b4"></span></a>
+    <a href="#bloc5" data-go="bloc5"><span class="n">5</span><span class="lbl">Électrophorèse</span><span class="st" data-st="b5"></span></a>
+    <a href="#bloc6" data-go="bloc6"><span class="n">6</span><span class="lbl">Applications</span><span class="st" data-st="b6"></span></a>
+    <span class="sep"></span>
+    <a href="#atelier" data-go="atelier" class="keep"><span class="n">A</span><span class="lbl">Atelier</span><span></span></a>
+    <a href="#td" data-go="td" class="keep"><span class="n">TD</span><span class="lbl">Le TD</span><span></span></a>
+  </nav>
+</aside>
+
+<main id="main">
+
+<!-- ======================= ACCUEIL ======================= -->
+<section class="view" id="v-accueil">
+  <header class="hero">
+    <p class="eyebrow">SBVI3D · Biologie moléculaire · Salut Allan ✌️</p>
+    <h1>Cocktail<br>PCR</h1>
+    <p class="lede">Tout le cours de PCR, de la matrice jusqu'au gel, en 6 blocs. Ensuite un atelier d'exercices qui se renouvellent à chaque clic, un par type de raisonnement du TD. À la fin, tu fais les 6 exercices du TD seul, correction cachée.</p>
+  </header>
+  <figure>
+    <div class="fig" data-fig="profile"></div>
+    <div class="post-row" style="margin-top:14px">
+      <span class="post-it">① 95 °C · 2–5 min</span>
+      <span class="post-it r">❶ 95 °C · 30 s</span>
+      <span class="post-it">❷ Ta · 30 s</span>
+      <span class="post-it r">❸ 72 °C · x s</span>
+      <span class="post-it">③ 72 °C · 5–10 min</span>
+    </div>
+    <figcaption>Le programme d'une PCR vu par le thermocycleur : une dénaturation initiale, un cycle de trois températures répété 30 à 35 fois, puis une élongation finale.</figcaption>
+  </figure>
+
+  <h2>Ton parcours</h2>
+  <ol class="path">
+    <li><div class="k">Étape 1</div><h4>Les 6 blocs</h4><p>Lis un bloc en entier, réponds aux questions ouvertes à l'écrit, puis fais son QCM (une question à la fois).</p><a href="#bloc1" data-go="bloc1">Commencer le bloc 1</a></li>
+    <li><div class="k">Étape 2</div><h4>L'atelier</h4><p>9 exercices générés au hasard : Tm, amorces, programme, cycles, gels. Refais-les jusqu'à ne plus te tromper.</p><a href="#atelier" data-go="atelier">Ouvrir l'atelier</a></li>
+    <li><div class="k">Étape 3</div><h4>Le TD</h4><p>Les 6 exercices du TD avec des indices progressifs, des vérifications automatiques et la correction à débloquer.</p><a href="#td" data-go="td">Aller au TD</a></li>
+  </ol>
+
+  <h2>Les 6 blocs du cours</h2>
+  <div class="blocks" id="home-blocks"></div>
+
+  <h2>Règles des QCM</h2>
+  <ul>
+    <li>Une seule question affichée à la fois : la suivante n'apparaît qu'après ta réponse.</li>
+    <li>Bonne réponse : <b>+1</b>. Mauvaise réponse : <b>−0,5</b>. Seule ta première réponse compte.</li>
+    <li>La bonne lettre change d'une question à l'autre (A, B, C ou D) et les options sont mélangées à chaque nouvelle tentative.</li>
+    <li>Un bouton « Indice » par question, et une justification pour chaque option une fois que tu as répondu.</li>
+  </ul>
+  <p class="muted">Ta progression (réponses, scores, brouillons) est gardée dans ce navigateur uniquement.</p>
+  <div class="actions" id="reset-zone"><button class="btn btn-ghost" id="reset-btn" type="button">Remettre ma progression à zéro</button></div>
+</section>
+
+<!-- ======================= BLOC 1 ======================= -->
+<section class="view" id="v-bloc1" hidden>
+  <header class="view-head">
+    <p class="eyebrow">Bloc 1 · diapos 2 à 5</p>
+    <h1>L'ADN, la réplication et l'idée de la PCR</h1>
+    <p class="lede">Avant de parler de PCR, il faut avoir en tête ce qu'est l'ADN et comment la cellule le copie. La PCR ne fait que reproduire ce mécanisme dans un tube, pour une seule séquence choisie.</p>
+    <p class="prep">Prépare : <a class="chip" href="#td" data-goto="ex2">TD ex 2</a> <a class="chip" href="#td" data-goto="ex3">TD ex 3A</a></p>
+  </header>
+
+  <h2><span class="num">1.1</span>L'ADN, rappels</h2>
+  <ul>
+    <li>L'ADN est le <b>support de l'information génétique</b>.</li>
+    <li>C'est une molécule <b>double brin</b>, enroulée en <b>double hélice</b>.</li>
+    <li>Il est formé de <b>4 nucléotides</b>. Chaque nucléotide associe un <b>groupement phosphate</b>, un <b>sucre</b> et une <b>base azotée</b>. Les sucres et les phosphates forment l'armature « phosphate-désoxyribose » du brin (schéma diapo 2).</li>
+    <li>Les 4 bases : adénine (A), thymine (T), guanine (G), cytosine (C).</li>
+    <li><b>Complémentarité</b> : A s'apparie avec T, G s'apparie avec C. Les deux bases appariées sont reliées par des liaisons hydrogène (les pointillés du schéma de la diapo 2).</li>
+    <li><b>Orientation</b> : un brin va de l'extrémité <b>5'P</b> (phosphate) à l'extrémité <b>3'OH</b>. On dit qu'il est orienté 5'→3'.</li>
+    <li>Les deux brins sont orientés <b>en sens opposés</b> : quand le brin du haut va de 5' à 3' (de gauche à droite), celui du bas va de 3' à 5'.</li>
+  </ul>
+  <figure>
+<div class="seqblock">5'-  A T G C T T A G C C A T  -3'
+     | | | | | | | | | | | |
+3'-  T A C G A A T C G G T A  -5'</div>
+    <figcaption>Exemple : deux brins complémentaires (A–T, G–C) et orientés en sens opposés. Chaque base du haut a sa partenaire en dessous.</figcaption>
+  </figure>
+  <div class="box method"><span class="tab">Réflexe</span>
+    <p>Dès que tu vois une séquence, repère ses extrémités 5' et 3'. Quand rien n'est indiqué, une séquence d'amorce est écrite dans le sens <b>5'→3'</b> (c'est la réponse de l'exercice 3A du TD).</p>
+  </div>
+
+  <h2><span class="num">1.2</span>La réplication in vivo</h2>
+  <p>Dans la cellule, trois acteurs interviennent pour recopier l'ADN (diapo 3). Retiens bien le nom de l'étape associée à chacun : ce sont exactement les noms des étapes de la PCR.</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Ordre</th><th>Acteur</th><th>Ce qu'il fait</th><th>Nom de l'étape</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><b>Hélicase</b></td><td>Sépare les deux brins</td><td>Dénaturation</td></tr>
+      <tr><td>2</td><td><b>Primers</b> (posés par la primase)</td><td>Amorcent la réplication en se fixant sur le brin à copier</td><td>Hybridation</td></tr>
+      <tr><td>3</td><td><b>ADN polymérase</b></td><td>Réplique : allonge les brins néosynthétisés à partir des primers</td><td>Élongation</td></tr>
+    </tbody>
+  </table></div>
+  <p>Sur le schéma de la diapo 3, un brin est copié en continu (<i>leading strand</i>) et l'autre par morceaux, les fragments d'Okazaki (<i>lagging strand</i>). Chaque morceau démarre sur un primer : la polymérase a toujours besoin d'une amorce pour commencer.</p>
+
+  <h2><span class="num">1.3</span>Pourquoi amplifier l'ADN ?</h2>
+  <p>Beaucoup de domaines travaillent sur l'ADN (diapo 4) :</p>
+  <div class="grid2">
+    <div class="cell"><h4>Police scientifique</h4><p>Empreintes génétiques.</p></div>
+    <div class="cell"><h4>Santé</h4><p>Diagnostic de maladies (génétiques, dépistages…).</p></div>
+    <div class="cell"><h4>Recherche fondamentale</h4><p>Clonage de gènes, analyse du génome.</p></div>
+    <div class="cell"><h4>Industrie</h4><p>Identification de micro-organismes.</p></div>
+  </div>
+  <p>Leur point commun : un <b>besoin d'ADN en grandes quantités</b>. C'est le problème que la PCR résout.</p>
+
+  <h2><span class="num">1.4</span>Le principe de la PCR</h2>
+  <p>PCR = <i>Polymerase Chain Reaction</i>. Son but : <b>amplifier un fragment d'ADN d'intérêt</b>, c'est-à-dire en fabriquer un très grand nombre de copies. Elle se déroule en trois temps (diapo 5) :</p>
+  <ol>
+    <li><b>① Dénaturation initiale</b> (une seule fois, au début).</li>
+    <li><b>② Un cycle répété 30 à 35 fois</b>, formé de trois étapes :
+      <ul><li><b>❶ Dénaturation</b></li><li><b>❷ Hybridation</b> (<i>annealing</i>)</li><li><b>❸ Élongation</b></li></ul></li>
+    <li><b>③ Élongation finale</b> (une seule fois, à la fin).</li>
+  </ol>
+  <div class="box quote"><span class="tab">La phrase clé</span><p>Un cycle PCR reproduit in vitro l'équivalent d'une réplication in vivo, pour une séquence donnée !</p></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Réplication in vivo</th><th>Cycle de PCR in vitro</th></tr></thead>
+    <tbody>
+      <tr><td>Hélicase : sépare les brins</td><td>❶ Dénaturation : la température élevée rompt les liaisons hydrogène</td></tr>
+      <tr><td>Primers : amorçage</td><td>❷ Hybridation : un couple d'amorces se fixe de part et d'autre de la séquence d'intérêt</td></tr>
+      <tr><td>ADN polymérase : élongation</td><td>❸ Élongation : une ADN polymérase qui résiste à la chaleur allonge les amorces</td></tr>
+    </tbody>
+  </table></div>
+  <p>La différence avec la cellule : ici, ce sont les <b>amorces</b> qui choisissent quelle séquence est copiée. Seule la région comprise entre les deux amorces est amplifiée.</p>
+
+  <div class="box"><span class="tab">À retenir</span><ul>
+    <li>ADN : double brin, A–T et G–C, chaque brin orienté 5'P → 3'OH, les deux brins en sens opposés.</li>
+    <li>Réplication : hélicase (dénaturation) → primers (hybridation) → ADN polymérase (élongation).</li>
+    <li>PCR : amplifier un fragment d'ADN d'intérêt. Dénaturation initiale, puis 30 à 35 cycles [dénaturation, hybridation, élongation], puis élongation finale.</li>
+  </ul></div>
+
+  <h2><span class="num">1.5</span>Questions ouvertes</h2>
+  <p class="muted">Réponds par écrit avant d'ouvrir les éléments de réponse. Tes brouillons sont gardés.</p>
+  <div class="oq"><p class="q"><b>1.</b> Explique pourquoi on dit qu'un cycle de PCR reproduit in vitro une réplication in vivo. Fais correspondre chaque acteur de la réplication à une étape du cycle.</p>
+    <textarea id="oq-b1-1" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>L'hélicase sépare les brins → <b>dénaturation</b> (en PCR, c'est la chaleur). Les primers amorcent → <b>hybridation</b> des amorces. L'ADN polymérase allonge → <b>élongation</b>. La PCR fait la même chose, dans un tube, et seulement pour la séquence encadrée par les amorces.</p></div></details></div>
+  <div class="oq"><p class="q"><b>2.</b> Pourquoi a-t-on besoin d'amplifier l'ADN ? Cite les quatre domaines du cours avec un exemple chacun.</p>
+    <textarea id="oq-b1-2" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Police scientifique (empreintes génétiques), santé (diagnostic de maladies génétiques, dépistages), recherche fondamentale (clonage de gènes, analyse du génome), industrie (identification de micro-organismes). Tous ont besoin d'ADN en grandes quantités.</p></div></details></div>
+  <div class="oq"><p class="q"><b>3.</b> Que désignent les extrémités 5' et 3' d'un brin ? Dessine deux brins appariés en indiquant leurs extrémités.</p>
+    <textarea id="oq-b1-3" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>5' = extrémité portant le phosphate (5'P), 3' = extrémité portant le OH (3'OH). Schéma : <span class="seq">5'→3'</span> en haut, <span class="seq">3'←5'</span> en bas : les brins sont en sens opposés.</p></div></details></div>
+
+  <h2><span class="num">1.6</span>QCM du bloc 1</h2>
+  <div class="qcm" data-block="b1"></div>
+  <div class="actions"><a class="btn btn-accent" href="#bloc2" data-go="bloc2" style="text-decoration:none">Bloc suivant : le cocktail PCR →</a></div>
+</section>
+
+<!-- ======================= BLOC 2 ======================= -->
+<section class="view" id="v-bloc2" hidden>
+  <header class="view-head">
+    <p class="eyebrow">Bloc 2 · diapos 6 à 20</p>
+    <h1>Le cocktail PCR : ce qu'on met dans le tube</h1>
+    <p class="lede">Le cours présente la PCR comme un cocktail : cinq ingrédients dans un petit tube, plus la température. Chaque ingrédient remplace un acteur de la réplication in vivo.</p>
+    <p class="prep">Prépare : <a class="chip" href="#td" data-goto="ex1">TD ex 1</a> <a class="chip" href="#td" data-goto="ex3">TD ex 3A</a> <a class="chip" href="#td" data-goto="ex6">TD ex 6B</a></p>
+  </header>
+
+  <h2><span class="num">2.0</span>Remplis le tube</h2>
+  <p>Avant de lire, teste-toi : clique sur les ingrédients qui vont dans le tube de PCR, puis vérifie.</p>
+  <div class="chips" id="tube-chips"></div>
+  <div class="actions"><button class="btn" type="button" id="tube-check">Vérifier mon tube</button><button class="btn btn-ghost" type="button" id="tube-reset">Recommencer</button></div>
+  <div id="tube-fb"></div>
+
+  <h2><span class="num">2.1</span>La matrice</h2>
+  <ul>
+    <li>C'est la <b>séquence d'ADN que l'on souhaite amplifier</b>. Dans le cours, elle est dessinée en rouge au milieu d'un ADN plus long (en bleu).</li>
+    <li>C'est <b>généralement de l'ADN double brin</b> (dsDNA).</li>
+    <li>Quand on <b>augmente la température</b>, les <b>liaisons hydrogène se rompent</b> : les deux brins se séparent (diapo 8).</li>
+  </ul>
+  <p>La courbe de la diapo 8 montre le pourcentage de bases non appariées en fonction de la température. À basse température l'ADN est double brin (0 % de bases non appariées). À forte température il est simple brin (100 %). Entre les deux, la courbe monte brutalement.</p>
+  <figure>
+    <div class="fig">
+      <div data-fig="melt"></div>
+      <div class="range"><label for="melt-r" class="f" style="flex:1 1 220px">Température (de basse à forte)<input type="range" id="melt-r" min="0" max="100" value="20"></label><span class="readout" id="melt-out"></span></div>
+    </div>
+    <figcaption>Fais glisser le curseur. Le point où 50 % des bases sont non appariées s'appelle le <b>Tm</b> (<i>melting temperature</i>) : on s'en servira pour les amorces au bloc 3.</figcaption>
+  </figure>
+
+  <h2><span class="num">2.2</span>Les amorces (primers)</h2>
+  <ul>
+    <li>Ce sont des <b>oligonucléotides</b> : de courtes séquences d'ADN <b>simple brin</b>.</li>
+    <li>Elles sont <b>complémentaires de l'ADN à amplifier</b>.</li>
+    <li>Elles sont situées <b>de part et d'autre de la région à amplifier</b>.</li>
+    <li>Il faut une amorce de chaque côté : on parle de <b>couple d'amorces</b>.</li>
+  </ul>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Les noms que tu peux croiser pour le couple</th></tr></thead>
+    <tbody>
+      <tr><td>gauche / droite (G/D) · left / right (L/R)</td></tr>
+      <tr><td>sens / antisens · forward / reverse · + / − · A / B</td></tr>
+    </tbody>
+  </table></div>
+  <p>Trois règles de plus (diapo 10) :</p>
+  <ul>
+    <li>Les amorces sont <b>toujours écrites dans le sens 5'→3'</b>.</li>
+    <li>Leur <b>longueur est comprise entre 18 et 30 nucléotides</b>.</li>
+    <li>Les deux amorces du couple ne doivent <b>pas être complémentaires entre elles</b>.</li>
+  </ul>
+  <figure>
+    <div class="fig" data-fig="primers"></div>
+    <figcaption>D'après la diapo 10. L'amorce forward (gauche) se fixe sur le brin du bas, au début de la région. L'amorce reverse (droite) se fixe sur le brin du haut, à la fin de la région. Les deux pointent vers l'intérieur de la région : la polymérase les allonge l'une vers l'autre.</figcaption>
+  </figure>
+  <div class="box"><span class="tab">Cahier des charges d'une amorce</span><ul>
+    <li>Simple brin, 18 à 30 nucléotides, écrite 5'→3'.</li>
+    <li>Complémentaire de la matrice, à une extrémité de la région à amplifier.</li>
+    <li>Non complémentaire de l'autre amorce du couple.</li>
+    <li>Tm entre 50 et 60 °C, et Tm des deux amorces proches (ΔTm &lt; 5 °C) : voir bloc 3.</li>
+  </ul></div>
+
+  <h2><span class="num">2.3</span>L'ADN polymérase thermostable</h2>
+  <p>Le raisonnement de la diapo 11 :</p>
+  <ol>
+    <li>L'ADN polymérase est un <b>complexe enzymatique</b>.</li>
+    <li>Or la PCR monte à 95 °C à chaque cycle : il faut une enzyme qui <b>résiste aux fortes températures</b>.</li>
+    <li>On l'a donc cherchée chez les <b>bactéries thermophiles extrêmes</b>.</li>
+  </ol>
+  <div class="grid2">
+    <div class="cell" style="border:1.5px solid var(--ink)"><h4>Taq polymerase</h4><p>Vient de <i>Thermus aquaticus</i>.</p><ul style="margin:8px 0 0;font-size:.92rem"><li>Résiste à 95 °C</li><li>Activité polymérase 5'→3'</li><li>Pas d'activité exonucléase 3'→5' (<i>proofreading</i>)</li></ul></div>
+    <div class="cell"><h4>Autres exemples</h4><p>Phusion (<i>Pyrococcus furiosus</i>)<br>Tfi polymerase (<i>Thermus filiformis</i>)<br>Tth polymerase (<i>Thermus thermophilus</i>)</p></div>
+  </div>
+
+  <h2><span class="num">2.4</span>Les dNTP : désoxyribonucléotides</h2>
+  <p>Ce sont les <b>éléments utilisés par la polymérase pour synthétiser les brins d'ADN</b> (diapo 13). Il en faut un pour chaque base de l'ADN.</p>
+  <h3>Leur structure (diapo 12)</h3>
+  <div class="tblwrap"><table>
+    <thead><tr><th>On assemble…</th><th>On obtient</th></tr></thead>
+    <tbody>
+      <tr><td>base + pentose (sucre)</td><td>nucléoside</td></tr>
+      <tr><td>nucléoside + 1 phosphate</td><td>nucléotide</td></tr>
+      <tr><td>nucléoside + 2 phosphates</td><td>nucléoside diphosphate</td></tr>
+      <tr><td>nucléoside + 3 phosphates</td><td>nucléoside triphosphate</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li>Sur le carbone 2' du pentose : <b>OH = ribose</b>, <b>H = désoxyribose</b>. Les dNTP portent un désoxyribose (le « d »).</li>
+    <li>La base est reliée au sucre par une liaison glycosidique.</li>
+    <li>Bases puriques (purines) : adénine, guanine. Bases pyrimidiques (pyrimidines) : cytosine, uracile, thymine.</li>
+  </ul>
+  <h3>Comment la polymérase les utilise (diapo 13)</h3>
+  <ol>
+    <li>Le dNTP entrant est complémentaire de la base du brin matrice (sur le schéma, un T arrive en face d'un A).</li>
+    <li>L'extrémité 3' du brin en cours de synthèse se lie au phosphate du dNTP (celui accroché en 5').</li>
+    <li>Un <b>pyrophosphate (PPi)</b> est libéré : des trois phosphates, un seul reste dans le brin.</li>
+  </ol>
+  <p>Conséquence : un nouveau brin grandit toujours par son extrémité 3', donc <b>de 5' vers 3'</b>.</p>
+
+  <h2><span class="num">2.5</span>Le tampon</h2>
+  <ul>
+    <li>Il maintient un <b>pH stable</b>, spécifique de l'ADN polymérase utilisée. Pour la Taq : <b>pH entre 7,5 et 9,5</b>.</li>
+    <li>Il apporte des <b>cofacteurs</b> : des cations. <b>Divalents : Mg²⁺</b>. <b>Monovalents : K⁺, NH₄⁺</b>.</li>
+  </ul>
+
+  <h2><span class="num">2.6</span>Et la température</h2>
+  <p>Le tube complet contient : matrice ADN, amorces, ADN polymérase, dNTPs, tampon (diapos 15 à 20). Il ne reste qu'à faire varier la <b>température</b>, grâce au thermocycleur. C'est le sujet du bloc 3.</p>
+
+  <div class="box"><span class="tab">À retenir</span><ul>
+    <li>Cinq ingrédients : <b>matrice</b> (ADN à amplifier), <b>amorces</b>, <b>ADN polymérase thermostable</b>, <b>dNTPs</b>, <b>tampon</b>. Plus la température.</li>
+    <li>Température ↑ → rupture des liaisons H → l'ADN passe de double brin à simple brin.</li>
+    <li>Amorces : simple brin, 18–30 nt, écrites 5'→3', de part et d'autre de la région, non complémentaires entre elles.</li>
+    <li>Taq : <i>Thermus aquaticus</i>, résiste à 95 °C, polymérase 5'→3', pas d'exonucléase 3'→5'.</li>
+    <li>Tampon Taq : pH 7,5–9,5 ; Mg²⁺ (divalent), K⁺ et NH₄⁺ (monovalents).</li>
+  </ul></div>
+
+  <h2><span class="num">2.7</span>Questions ouvertes</h2>
+  <div class="oq"><p class="q"><b>1.</b> Pourquoi la PCR a-t-elle besoin d'une ADN polymérase thermostable ? D'où vient la Taq et quelles sont ses trois caractéristiques ?</p>
+    <textarea id="oq-b2-1" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>À chaque cycle, on chauffe à 95 °C pour dénaturer l'ADN : l'enzyme doit résister aux fortes températures. On l'a trouvée chez une bactérie thermophile extrême, <i>Thermus aquaticus</i>. La Taq résiste à 95 °C, a une activité polymérase 5'→3' et n'a pas d'activité exonucléase 3'→5' (proofreading).</p></div></details></div>
+  <div class="oq"><p class="q"><b>2.</b> Donne au moins quatre caractéristiques que doit respecter un couple d'amorces.</p>
+    <textarea id="oq-b2-2" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Oligonucléotides simple brin ; complémentaires de la matrice ; placées de part et d'autre de la région ; une de chaque côté ; écrites 5'→3' ; 18 à 30 nucléotides ; non complémentaires entre elles ; Tm entre 50 et 60 °C et ΔTm &lt; 5 °C.</p></div></details></div>
+  <div class="oq"><p class="q"><b>3.</b> À quoi servent les dNTP et le tampon ? Que libère la polymérase quand elle ajoute un dNTP ?</p>
+    <textarea id="oq-b2-3" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Les dNTP sont les éléments que la polymérase assemble pour synthétiser les nouveaux brins. Le tampon maintient un pH stable adapté à la polymérase (7,5–9,5 pour la Taq) et apporte les cations cofacteurs (Mg²⁺, K⁺, NH₄⁺). À chaque ajout, un pyrophosphate (PPi) est libéré.</p></div></details></div>
+
+  <h2><span class="num">2.8</span>QCM du bloc 2</h2>
+  <div class="qcm" data-block="b2"></div>
+  <div class="actions"><a class="btn btn-accent" href="#bloc3" data-go="bloc3" style="text-decoration:none">Bloc suivant : programmer une PCR →</a></div>
+</section>
+
+<!-- ======================= BLOC 3 ======================= -->
+<section class="view" id="v-bloc3" hidden>
+  <header class="view-head">
+    <p class="eyebrow">Bloc 3 · diapos 21 à 27, 45, 48 à 53</p>
+    <h1>Programmer une PCR : étapes, Tm et élongation</h1>
+    <p class="lede">C'est le bloc le plus important pour le TD. Tu y apprends les trois étapes d'un cycle, le calcul du Tm, le temps d'élongation, et les deux méthodes des exemples du cours : choisir un couple d'amorces et planifier une PCR complète.</p>
+    <p class="prep">Prépare : <a class="chip" href="#td" data-goto="ex2">TD ex 2</a> <a class="chip" href="#td" data-goto="ex3">TD ex 3 (A, B, C)</a> <a class="chip" href="#td" data-goto="ex6">TD ex 6B</a></p>
+  </header>
+
+  <h2><span class="num">3.1</span>Le thermocycleur</h2>
+  <p>C'est l'appareil qui fait varier la température des tubes (diapo 21). Il a un <b>bloc chauffant</b>, où l'on place les tubes, et un <b>clavier de programmation</b>, où l'on entre les températures et les durées de chaque étape.</p>
+
+  <h2><span class="num">3.2</span>Les trois étapes d'un cycle</h2>
+  <figure>
+    <div class="fig"><div class="sim" data-sim="mini"></div></div>
+    <figcaption>Le premier cycle, étape par étape (diapos 22 à 28). Clique sur chaque étape.</figcaption>
+  </figure>
+  <h3>❶ Dénaturation de l'ADN</h3>
+  <div class="post-row"><span class="post-it">95 °C · 30 s</span></div>
+  <p>La température élevée rompt les liaisons hydrogène : l'ADN double brin devient deux brins simples. Chacun va servir de modèle.</p>
+  <h3>❷ Hybridation des amorces</h3>
+  <div class="post-row"><span class="post-it r">Ta · 30 s</span></div>
+  <p>On redescend à la température <b>Ta</b> (<i>annealing temperature</i>), qui est <b>liée au Tm des amorces</b>. Les amorces se fixent sur leurs séquences complémentaires : la forward sur le brin du bas, au début de la région ; la reverse sur le brin du haut, à la fin de la région.</p>
+  <h3>❸ Élongation</h3>
+  <div class="post-row"><span class="post-it">72 °C · x s</span></div>
+  <p>La polymérase allonge chaque amorce de 5' vers 3' en ajoutant des dNTP. La <b>température dépend de la polymérase</b> utilisée (72 °C pour la Taq). La <b>durée dépend de la taille</b> de la séquence à amplifier et de la <b>vitesse</b> de la polymérase.</p>
+
+  <h2><span class="num">3.3</span>Le Tm des amorces</h2>
+  <p>Comme la matrice, une amorce hybridée se détache quand on chauffe. Le <b>Tm</b> (<i>melting temperature</i>) est la température à laquelle <b>50 % des bases sont non appariées</b> (diapo 24). Pour calculer le Tm d'une amorce, le cours donne une formule rapide et facile, mais approximative :</p>
+  <div class="box formula"><span class="tab">Formule</span><p>Tm = 2 × (A+T) + 4 × (G+C)</p></div>
+  <p>A+T = nombre de A et de T dans l'amorce. G+C = nombre de G et de C. Chaque G ou C compte 4 °C, chaque A ou T compte 2 °C.</p>
+  <div class="box method"><span class="tab">Méthode</span><ol>
+    <li>Compte les A et les T → A+T.</li>
+    <li>Compte les G et les C → G+C. Vérifie que A+T + G+C = longueur de l'amorce.</li>
+    <li>Calcule Tm = 2 × (A+T) + 4 × (G+C).</li>
+    <li>Vérifie les deux règles de design (diapo 25) : <b>chaque Tm entre 50 et 60 °C</b>, et <b>ΔTm &lt; 5 °C</b> entre les deux amorces.</li>
+  </ol></div>
+  <h3>Exemple du cours (correction diapo 49)</h3>
+  <p>Amorce forward <span class="seq">5'-TATGAACACTTAGATATTGCT-3'</span>, 21 nucléotides : A+T = 15, G+C = 6, donc Tm = 2 × 15 + 4 × 6 = 30 + 24 = <b>54 °C</b>.</p>
+  <p>Amorce reverse <span class="seq">5'-CAGATTTTAGACGTACTCT-3'</span>, 19 nucléotides : A+T = 12, G+C = 7, donc Tm = 2 × 12 + 4 × 7 = 24 + 28 = <b>52 °C</b>.</p>
+  <p>Les deux sont entre 50 et 60 °C et ΔTm = 2 °C &lt; 5 °C : le couple est <b>compatible</b>.</p>
+
+  <h3>Calculateur pour vérifier tes calculs</h3>
+  <p class="muted">Fais d'abord le calcul à la main, puis vérifie ici.</p>
+  <div class="fields">
+    <label class="f" for="calc-a">Amorce 1 (5'→3')<input type="text" class="seqin" id="calc-a" value="TATGAACACTTAGATATTGCT" autocomplete="off" spellcheck="false"></label>
+    <label class="f" for="calc-b">Amorce 2 (5'→3')<input type="text" class="seqin" id="calc-b" value="CAGATTTTAGACGTACTCT" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div id="calc-out" class="fb neutral"></div>
+
+  <h3>Et si le couple n'est pas compatible ?</h3>
+  <p>On <b>modifie une amorce</b>. Le TD demande de le faire pour amplifier <b>exactement la même région</b>. Voici le raisonnement :</p>
+  <ul>
+    <li>Un nouveau brin commence toujours par l'amorce (bloc 4). La région amplifiée va donc de l'<b>extrémité 5' d'une amorce</b> à l'<b>extrémité 5' de l'autre</b>.</li>
+    <li>Pour ne pas changer la région, on <b>garde l'extrémité 5'</b> et on <b>retire des nucléotides côté 3'</b> de l'amorce dont le Tm est trop élevé.</li>
+    <li>Retirer un G ou un C fait baisser le Tm de 4 °C ; retirer un A ou un T le fait baisser de 2 °C.</li>
+    <li>On s'arrête dès que les règles sont respectées, sans descendre sous 18 nucléotides.</li>
+  </ul>
+  <div class="box method"><span class="tab">Exemple d'entraînement</span>
+    <p>Amorce 1 : <span class="seq">5'-AGCTTAGGCATCGATGACGC-3'</span> (20 nt) : A+T = 9, G+C = 11 → Tm = 18 + 44 = <b>62 °C</b>.<br>
+    Amorce 2 : <span class="seq">5'-TTAGCATCGGATACTGAC-3'</span> (18 nt) : A+T = 10, G+C = 8 → Tm = 20 + 32 = <b>52 °C</b>.</p>
+    <p>Incompatible : 62 °C dépasse 60 °C et ΔTm = 10 °C. On raccourcit l'amorce 1 par son extrémité 3' :</p>
+    <ul>
+      <li>on retire le C final → <span class="seq">…GACG-3'</span>, 19 nt, Tm = 58 °C, ΔTm = 6 °C : encore trop ;</li>
+      <li>on retire aussi le G → <span class="seq">5'-AGCTTAGGCATCGATGAC-3'</span>, 18 nt, Tm = <b>54 °C</b>, ΔTm = 2 °C : compatible.</li>
+    </ul>
+  </div>
+  <h3>Et la température d'hybridation Ta ?</h3>
+  <p>Le cours dit : <b>Ta ≈ Tm des amorces</b> (diapo 45). Dans les corrections du TD, on prend <b>le Tm le plus bas du couple</b> : amorces à 54 et 52 °C → hybridation à 52 °C.</p>
+
+  <h2><span class="num">3.4</span>Le temps d'élongation</h2>
+  <p>La Taq amplifie <b>1000 pb par minute</b> à sa température optimale (72 °C), soit 1000 pb en 60 s. On fait un produit en croix :</p>
+  <div class="box formula"><span class="tab">Produit en croix</span><p>t (s) = 60 × taille (pb) ÷ 1000</p></div>
+  <div class="seqblock">1000 pb  →  60 s
+ 171 pb  →  ?     donc  60 × 171 / 1000 = 10,26 s  ≈ 10 s</div>
+  <p>Exemple du cours (diapo 50) : la séquence à amplifier fait 171 pb, l'élongation dure donc environ <b>10 s</b>.</p>
+
+  <h2><span class="num">3.5</span>Le programme complet</h2>
+  <figure><div class="fig" data-fig="profile"></div></figure>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Étape</th><th>Température</th><th>Durée</th><th>Ce qui en dépend</th></tr></thead>
+    <tbody>
+      <tr><td><b>① Dénaturation initiale</b></td><td>95 °C</td><td>2 à 5 min</td><td>—</td></tr>
+      <tr><td colspan="4" style="background:var(--soft);font:600 .75rem var(--f-mono);letter-spacing:.06em;text-transform:uppercase">② Cycle répété 30 à 35 fois</td></tr>
+      <tr><td>❶ Dénaturation</td><td>95 °C</td><td>30 s</td><td>—</td></tr>
+      <tr><td>❷ Hybridation</td><td>Ta ≈ Tm des amorces</td><td>30 s</td><td>Le Tm des amorces</td></tr>
+      <tr><td>❸ Élongation</td><td>72 °C (Taq)</td><td>x s</td><td>La température : la polymérase. La durée : la longueur de la séquence (Taq : 1000 pb/min)</td></tr>
+      <tr><td><b>③ Élongation finale</b></td><td>72 °C (Taq)</td><td>5 à 10 min</td><td>—</td></tr>
+    </tbody>
+  </table></div>
+  <p>Quand on te demande de « mettre en évidence les étapes à répéter », encadre ou accolade les trois étapes du cycle et écris « × 30 à 35 » à côté.</p>
+
+  <h2><span class="num">3.6</span>Méthode : choisir un couple d'amorces</h2>
+  <p>Exemple du cours (diapos 48 et 49). On veut amplifier cette séquence double brin :</p>
+<div class="seqblock">5'- GACCTGTGGAAGC - - - - - - - - - - CATACGGGATTG -3'
+3'- CTGGACACCTTCG - - - - - - - - - - GTATGCCCTAAC -5'</div>
+  <div class="box method"><span class="tab">La méthode</span><ul>
+    <li><b>Amorce gauche (forward)</b> : ce sont les premiers nucléotides du brin du haut, <b>recopiés tels quels</b> de 5' vers 3'. Elle s'hybride sur le brin du bas et la polymérase l'allonge vers la droite.</li>
+    <li><b>Amorce droite (reverse)</b> : c'est le <b>complémentaire inverse</b> des derniers nucléotides du brin du haut. On écrit le complémentaire, puis on le relit à l'envers pour l'écrire de 5' vers 3'. C'est aussi la fin du brin du bas, lue de 5' vers 3'.</li>
+    <li><b>Piège classique</b> : écrire le complémentaire sans l'inverser. On obtient une séquence écrite 3'→5' qu'on fait passer pour du 5'→3'.</li>
+  </ul></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Amorces gauches proposées</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td><span class="seq">5'-GACCTGTGGAAGC-3'</span></td><td><span class="ok-mark">✓</span> Début du brin du haut recopié : c'est la bonne.</td></tr>
+      <tr><td><span class="seq">5'-CTGGACACCTTCG-3'</span></td><td><span class="ko-mark">✗</span> Complémentaire non inversé : c'est le brin du bas lu de 3' vers 5'.</td></tr>
+      <tr><td><span class="seq">5'-CGAAGGTGTCCAG-3'</span></td><td><span class="ko-mark">✗</span> Brin du haut lu à l'envers : il n'est complémentaire de rien dans le bon sens.</td></tr>
+      <tr><td><span class="seq">5'-GCTTCCACAGGTC-3'</span></td><td><span class="ko-mark">✗</span> Début du brin du bas lu 5'→3' : elle se fixerait sur le brin du haut et partirait vers la gauche, hors de la région.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Amorces droites proposées</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td><span class="seq">5'-CATACGGGATTG-3'</span></td><td><span class="ko-mark">✗</span> Fin du brin du haut recopiée : elle se fixerait sur le brin du bas et partirait vers la droite, hors de la région.</td></tr>
+      <tr><td><span class="seq">5'-GTATGCCCTAAC-3'</span></td><td><span class="ko-mark">✗</span> Complémentaire non inversé (écrit en réalité 3'→5').</td></tr>
+      <tr><td><span class="seq">5'-GTTAGGGCATAC-3'</span></td><td><span class="ko-mark">✗</span> Fin du brin du haut lue à l'envers.</td></tr>
+      <tr><td><span class="seq">5'-CAATCCCGTATG-3'</span></td><td><span class="ok-mark">✓</span> Complémentaire inverse de CATACGGGATTG : c'est la bonne.</td></tr>
+    </tbody>
+  </table></div>
+  <h3>Le complémentaire inverse, pas à pas</h3>
+  <p>Tape une séquence (celle de la fin du brin du haut) et regarde les deux étapes. Exemple pré-rempli : la fin de la séquence de la diapo 50.</p>
+  <label class="f" for="rc-in">Fin du brin du haut (5'→3')<input type="text" class="seqin" id="rc-in" value="AGAGTACGTCTAAAATCTG" autocomplete="off" spellcheck="false"></label>
+  <div id="rc-out" class="seqblock" style="margin-top:10px"></div>
+
+  <h2><span class="num">3.7</span>Exemple résolu : planifier une PCR</h2>
+  <p>Exemple du cours (diapos 50 à 53), avec sa correction. On veut amplifier la partie en rouge (171 pb) de cette séquence simple brin :</p>
+  <div class="seqwrap" data-fig="d50"></div>
+  <p><b>1. Dessiner les amorces.</b> Forward = début de la partie rouge recopié. Reverse = complémentaire inverse de la fin de la partie rouge.</p>
+<div class="seqblock"><span class="tg">5'-TATGAACACTTAGATATTGCT</span>… … …<span class="tg">GAAAGAGTACGTCTAAAATCTG-3'</span>
+                             3'-TCTCATGCAGATTTTAGAC-5'   ← reverse (hybridée)
+<span class="hl-f">5'-TATGAACACTTAGATATTGCT-3'</span>   ← forward
+<span class="muted">(forward hybridée sur le brin complémentaire)</span>
+
+Forward : 5'-TATGAACACTTAGATATTGCT-3'   21 nt
+Reverse : 5'-CAGATTTTAGACGTACTCT-3'     19 nt   (le même, réécrit 5'→3')</div>
+  <p><b>2. Calculer les Tm.</b> Forward : 2 × 15 + 4 × 6 = <b>54 °C</b>. Reverse : 2 × 12 + 4 × 7 = <b>52 °C</b>. Tous deux entre 50 et 60 °C, ΔTm = 2 °C : compatibles.</p>
+  <p><b>3. Temps d'élongation.</b> 60 × 171 / 1000 = 10,26 s → <b>10 s</b>.</p>
+  <p><b>4. Programme.</b></p>
+<div class="seqblock">Dénaturation initiale    95 °C   2 min   (5 min accepté)
+          ┌ Dénaturation     95 °C   30 s
+× 30 à 35 ┤ Hybridation      52 °C   30 s
+          └ Élongation       72 °C   10 s
+Élongation finale        72 °C   5 min   (10 min accepté)</div>
+
+  <div class="box"><span class="tab">À retenir</span><ul>
+    <li>❶ 95 °C 30 s · ❷ Ta 30 s · ❸ 72 °C x s. Encadrés par 95 °C 2–5 min au début et 72 °C 5–10 min à la fin. Cycle × 30–35.</li>
+    <li>Tm = 2(A+T) + 4(G+C). Chaque Tm entre 50 et 60 °C, ΔTm &lt; 5 °C. Ta = Tm le plus bas (corrections).</li>
+    <li>Pour baisser un Tm sans changer la région : raccourcir côté 3'.</li>
+    <li>Élongation Taq : t = 60 × taille / 1000 (s).</li>
+    <li>Forward = début du brin du haut recopié. Reverse = complémentaire inverse de la fin du brin du haut.</li>
+  </ul></div>
+
+  <h2><span class="num">3.8</span>Questions ouvertes</h2>
+  <div class="oq"><p class="q"><b>1.</b> Qu'est-ce que le Tm d'une amorce ? Comment le calcule-t-on et quelles règles doit-il respecter ?</p>
+    <textarea id="oq-b3-1" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Le Tm (melting temperature) est la température à laquelle 50 % des bases sont non appariées. Tm = 2(A+T) + 4(G+C), calcul rapide mais approximatif. Chaque amorce doit avoir un Tm entre 50 et 60 °C, et les Tm des deux amorces doivent être proches : ΔTm &lt; 5 °C.</p></div></details></div>
+  <div class="oq"><p class="q"><b>2.</b> De quoi dépendent la température et la durée de l'élongation ? Calcule la durée pour un fragment de 500 pb amplifié par la Taq.</p>
+    <textarea id="oq-b3-2" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>La température dépend de la polymérase (72 °C pour la Taq). La durée dépend de la taille de la séquence et de la vitesse de la polymérase. 60 × 500 / 1000 = <b>30 s</b>.</p></div></details></div>
+  <div class="oq"><p class="q"><b>3.</b> Écris de mémoire le programme complet d'une PCR avec la Taq (températures et durées), en mettant en évidence les étapes répétées.</p>
+    <textarea id="oq-b3-3" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Dénaturation initiale 95 °C, 2–5 min. Puis × 30–35 : dénaturation 95 °C 30 s ; hybridation Ta (≈ Tm des amorces) 30 s ; élongation 72 °C, x s selon la taille. Enfin élongation finale 72 °C, 5–10 min.</p></div></details></div>
+
+  <h2><span class="num">3.9</span>QCM du bloc 3</h2>
+  <div class="qcm" data-block="b3"></div>
+  <div class="actions"><a class="btn btn-accent" href="#bloc4" data-go="bloc4" style="text-decoration:none">Bloc suivant : les cycles →</a></div>
+</section>
+
+<!-- ======================= BLOC 4 ======================= -->
+<section class="view" id="v-bloc4" hidden>
+  <header class="view-head">
+    <p class="eyebrow">Bloc 4 · diapos 28 à 46</p>
+    <h1>Les cycles : d'une molécule à un milliard</h1>
+    <p class="lede">Ce bloc suit, cycle après cycle, ce que deviennent les brins d'ADN. C'est exactement ce que demande l'exercice 4 du TD : compter les molécules et les dessiner après les cycles 1, 2, 3 et 4.</p>
+    <p class="prep">Prépare : <a class="chip" href="#td" data-goto="ex4">TD ex 4</a></p>
+  </header>
+
+  <h2><span class="num">4.1</span>Deux règles pour tout comprendre</h2>
+  <div class="grid2">
+    <div class="cell"><h4>Règle 1</h4><p>Un nouveau brin <b>commence toujours par une amorce</b> (à son extrémité 5') et s'allonge de 5' vers 3'.</p></div>
+    <div class="cell"><h4>Règle 2</h4><p>La polymérase <b>s'arrête au bout du brin qu'elle recopie</b>. Si ce brin est long, le nouveau brin est long ; s'il s'arrête à une amorce, le nouveau brin aussi.</p></div>
+  </div>
+  <p>Pour suivre les schémas, on distingue trois sortes de brins :</p>
+  <ul>
+    <li><b>Brin original</b> (bleu, région cible en rouge) : celui de la molécule de départ.</li>
+    <li><b>Brin long</b> : commence à une amorce et va jusqu'au bout d'un brin original. Il n'est délimité que d'un côté.</li>
+    <li><b>Brin court</b> : commence à une amorce et s'arrête au niveau de l'autre amorce. Il est délimité des deux côtés : il a la taille exacte de la région.</li>
+  </ul>
+  <p>Une molécule formée de <b>deux brins courts</b> est un <b>amplicon d'intérêt</b> (diapo 38) : c'est le produit qu'on veut.</p>
+
+  <h2><span class="num">4.2</span>Simulateur de cycles</h2>
+  <figure>
+    <div class="fig"><div class="sim" data-sim="full"></div></div>
+    <figcaption>Couleurs du site : amorce forward en violet et son allongement en vert foncé ; amorce reverse en rose et son allongement en vert clair (comme les diapos 28 à 38). Les amplicons d'intérêt sont surlignés en jaune, comme sur la diapo 46.</figcaption>
+  </figure>
+
+  <h2><span class="num">4.3</span>Cycle par cycle</h2>
+  <h3>Cycle 1 (diapo 28)</h3>
+  <p>Dénaturation : la molécule de départ donne 2 brins simples. Hybridation : l'amorce forward se fixe sur le brin du bas, la reverse sur le brin du haut. Élongation : chaque amorce est allongée jusqu'au bout du brin original. <b>Résultat : 2 molécules</b>, chacune formée d'un brin original et d'un brin long.</p>
+  <h3>Cycle 2 (diapos 29 à 33)</h3>
+  <p>Les 2 molécules donnent 4 brins simples : 2 originaux et 2 longs. Sur les brins originaux, on obtient à nouveau des brins longs. Sur les brins longs, la polymérase s'arrête au bout, c'est-à-dire au niveau de la première amorce : on obtient les <b>premiers brins courts</b>. <b>Résultat : 4 molécules</b> (2 × original + long, 2 × long + court). Encore aucun amplicon d'intérêt.</p>
+  <h3>Cycle 3 (diapos 34 à 38)</h3>
+  <p>8 brins simples. Les brins courts du cycle 2 servent de modèle à leur tour et donnent des brins courts. <b>Résultat : 8 molécules</b>, dont les <b>2 premiers amplicons d'intérêt</b> (deux brins courts appariés). C'est l'« apparition des premiers amplicons d'intérêt » de la diapo 38.</p>
+  <h3>Cycle 4 (diapo 46)</h3>
+  <p><b>16 molécules</b>, dont <b>8 amplicons d'intérêt</b> (ceux surlignés en jaune sur la diapo 46).</p>
+
+  <h2><span class="num">4.4</span>Une amplification exponentielle</h2>
+  <p>À chaque cycle, chaque molécule est recopiée : le nombre de molécules <b>double</b>. En partant d'une seule molécule, on a 2ⁿ molécules après n cycles.</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Après le cycle</th><th class="num">Molécules d'ADN</th><th class="num">dont amplicons d'intérêt</th></tr></thead>
+    <tbody>
+      <tr><td>Départ</td><td class="num">1</td><td class="num">0</td></tr>
+      <tr><td>1</td><td class="num">2</td><td class="num">0</td></tr>
+      <tr><td>2</td><td class="num">4</td><td class="num">0</td></tr>
+      <tr><td>3</td><td class="num">8</td><td class="num">2</td></tr>
+      <tr><td>4</td><td class="num">16</td><td class="num">8</td></tr>
+      <tr><td>30</td><td class="num">2³⁰ ≈ 1,07·10⁹</td><td class="num">—</td></tr>
+    </tbody>
+  </table></div>
+  <p>Après 30 cycles, on a donc environ un milliard de copies (diapo 46).</p>
+
+  <div class="box method"><span class="tab">Pour le schéma du TD (ex 4)</span><ol>
+    <li>Dessine chaque brin comme une flèche orientée de 5' vers 3' et écris 5' et 3' à ses extrémités.</li>
+    <li>Brins originaux dans une couleur, région cible marquée dans une autre.</li>
+    <li>Chaque amorce dans sa couleur, toujours au début (5') des nouveaux brins, et l'allongement dans une autre couleur.</li>
+    <li>Un nouveau brin s'arrête au bout du brin qu'il recopie.</li>
+    <li>Vérifie tes totaux : 2, 4, 8, 16 molécules, et 2 amplicons d'intérêt dès le cycle 3.</li>
+  </ol></div>
+
+  <div class="box"><span class="tab">À retenir</span><ul>
+    <li>Chaque cycle double le nombre de molécules : 2ⁿ après n cycles (depuis une molécule).</li>
+    <li>Cycle 1 : original + long. Cycle 2 : apparition des brins courts. Cycle 3 : 2 premiers amplicons d'intérêt. Cycle 4 : 8 sur 16.</li>
+    <li>2³⁰ ≈ 1,07·10⁹ copies après 30 cycles.</li>
+  </ul></div>
+
+  <h2><span class="num">4.5</span>Questions ouvertes</h2>
+  <div class="oq"><p class="q"><b>1.</b> Pourquoi n'obtient-on aucun amplicon d'intérêt à la fin des cycles 1 et 2 ?</p>
+    <textarea id="oq-b4-1" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Au cycle 1, les nouveaux brins sont recopiés sur les brins originaux : la polymérase va jusqu'au bout, ils sont longs. Au cycle 2, les premiers brins courts apparaissent (recopiés sur les brins longs), mais ils sont appariés à un brin long. Il faut attendre le cycle 3 pour qu'un brin court serve de modèle et donne une molécule de deux brins courts.</p></div></details></div>
+  <div class="oq"><p class="q"><b>2.</b> Combien de molécules obtient-on après 5 cycles en partant d'une seule molécule ? Et après 30 cycles ?</p>
+    <textarea id="oq-b4-2" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>2⁵ = 32 molécules. Après 30 cycles : 2³⁰ ≈ 1,07·10⁹ copies.</p></div></details></div>
+  <div class="oq"><p class="q"><b>3.</b> Où s'arrête la polymérase quand elle recopie un brin original ? Et quand elle recopie un brin long ?</p>
+    <textarea id="oq-b4-3" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Sur un brin original : au bout de ce brin, bien au-delà de la région cible (d'où un brin long). Sur un brin long : au bout de ce brin, qui correspond à l'amorce par laquelle il commence (d'où un brin court, à la taille exacte de la région).</p></div></details></div>
+
+  <h2><span class="num">4.6</span>QCM du bloc 4</h2>
+  <div class="qcm" data-block="b4"></div>
+  <div class="actions"><a class="btn btn-accent" href="#bloc5" data-go="bloc5" style="text-decoration:none">Bloc suivant : l'électrophorèse →</a></div>
+</section>
+
+<!-- ======================= BLOC 5 ======================= -->
+<section class="view" id="v-bloc5" hidden>
+  <header class="view-head">
+    <p class="eyebrow">Bloc 5 · diapo 47 (et gels des diapos 57, 60, correction)</p>
+    <h1>Visualiser l'ADN : l'électrophorèse</h1>
+    <p class="lede">Une fois la PCR terminée, on vérifie le résultat sur un gel. Savoir où une bande va se placer est indispensable pour les schémas de résultats des exercices 5 et 6 du TD.</p>
+    <p class="prep">Prépare : <a class="chip" href="#td" data-goto="ex5">TD ex 5</a> <a class="chip" href="#td" data-goto="ex6">TD ex 6B</a></p>
+  </header>
+
+  <h2><span class="num">5.1</span>Le principe</h2>
+  <ul>
+    <li>On dépose l'ADN dans un <b>gel d'agarose</b>. Il <b>migre en fonction de sa taille</b>, grâce à sa <b>charge négative</b>.</li>
+    <li>Chargé négativement, l'ADN part des puits (côté −) et avance vers le pôle <b>+</b> (sur la diapo 47, − en haut, + en bas).</li>
+    <li>Les fragments les plus <b>petits migrent le plus loin</b>. Sur les gels du cours, la bande de 47 pb est en dessous de celle de 50 pb.</li>
+    <li>La piste <b>M</b> est un <b>marqueur de poids moléculaires</b> : une série de bandes de tailles connues, qui sert de repère.</li>
+  </ul>
+  <div class="box method"><span class="tab">Lire un gel</span><ol>
+    <li>Repère les puits (en haut) et le sens de migration (vers le +).</li>
+    <li>Une bande = un fragment d'une taille donnée. Deux bandes dans une piste = deux fragments de tailles différentes.</li>
+    <li>Plus une bande est basse, plus le fragment est petit.</li>
+    <li>Compare les positions entre pistes, ou avec le marqueur.</li>
+  </ol></div>
+
+  <h2><span class="num">5.2</span>Suivre l'amplification</h2>
+  <figure>
+    <div class="fig" data-fig="gelcycles"></div>
+    <figcaption>Représentation simplifiée de la diapo 47 : produit de PCR prélevé après 1, 10, 20, 25 et 30 cycles, et marqueur M.</figcaption>
+  </figure>
+  <p>La <b>quantité d'ADN cible augmente au fur et à mesure des cycles</b> : rien de visible après 1 et 10 cycles, une bande faible à 20 cycles, de plus en plus intense à 25 et 30 cycles.</p>
+
+  <h2><span class="num">5.3</span>La saturation</h2>
+  <p>La quantité n'augmente pas indéfiniment : il y a <b>saturation après 30–35 cycles</b>, pour deux raisons :</p>
+  <ul>
+    <li><b>épuisement des dNTP et/ou des amorces</b> (consommés à chaque cycle) ;</li>
+    <li><b>perte d'activité de la polymérase</b> à force de répétitions à des températures élevées.</li>
+  </ul>
+  <p>C'est pour cela que le cycle est répété 30 à 35 fois, pas plus.</p>
+
+  <h2><span class="num">5.4</span>Prédire un gel</h2>
+  <p>Les deux gels que tu dois savoir dessiner au TD :</p>
+  <div class="grid2">
+    <div class="cell"><h4>Une délétion</h4><p>Avec les mêmes amorces, l'allèle délété donne un fragment plus court : sa bande est <b>plus basse</b>. Exemple : 50 pb (normal) et 47 pb (muté).</p></div>
+    <div class="cell"><h4>Des microsatellites</h4><p>Plus il y a de répétitions, plus le fragment est long : sa bande est <b>plus haute</b>. L'individu avec le moins de répétitions a la bande la plus basse.</p></div>
+  </div>
+
+  <div class="box"><span class="tab">À retenir</span><ul>
+    <li>Gel d'agarose : l'ADN (chargé −) migre vers le + selon sa taille ; petits fragments = plus loin.</li>
+    <li>M = marqueur de poids moléculaires.</li>
+    <li>La bande s'intensifie avec les cycles, puis saturation après 30–35 cycles (dNTP/amorces épuisés, polymérase moins active).</li>
+  </ul></div>
+
+  <h2><span class="num">5.5</span>Questions ouvertes</h2>
+  <div class="oq"><p class="q"><b>1.</b> Pourquoi l'ADN migre-t-il dans un gel d'agarose, vers quel pôle, et selon quel critère les fragments sont-ils séparés ?</p>
+    <textarea id="oq-b5-1" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>L'ADN est chargé négativement : il migre vers le pôle +. Il est séparé selon sa taille : les petits fragments vont plus loin que les grands.</p></div></details></div>
+  <div class="oq"><p class="q"><b>2.</b> Pourquoi la quantité d'ADN n'augmente-t-elle plus après 30 à 35 cycles ?</p>
+    <textarea id="oq-b5-2" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Saturation : épuisement des dNTP et/ou des amorces, et perte d'activité de la polymérase après de nombreuses répétitions à haute température.</p></div></details></div>
+  <div class="oq"><p class="q"><b>3.</b> Deux produits de PCR font 150 pb et 147 pb. Dessine le gel attendu et explique.</p>
+    <textarea id="oq-b5-3" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Deux pistes, une bande chacune. La bande de 147 pb est un peu plus bas que celle de 150 pb, car le fragment le plus court migre plus loin.</p></div></details></div>
+
+  <h2><span class="num">5.6</span>QCM du bloc 5</h2>
+  <div class="qcm" data-block="b5"></div>
+  <div class="actions"><a class="btn btn-accent" href="#bloc6" data-go="bloc6" style="text-decoration:none">Bloc suivant : les applications →</a></div>
+</section>
+
+<!-- ======================= BLOC 6 ======================= -->
+<section class="view" id="v-bloc6" hidden>
+  <header class="view-head">
+    <p class="eyebrow">Bloc 6 · diapos 54 à 61</p>
+    <h1>Les applications : diagnostic et empreintes génétiques</h1>
+    <p class="lede">Les deux derniers exercices du TD sont des applications du cours : détecter la délétion de la mucoviscidose et différencier des individus grâce à un microsatellite. Ce bloc te donne tout le raisonnement.</p>
+    <p class="prep">Prépare : <a class="chip" href="#td" data-goto="ex5">TD ex 5</a> <a class="chip" href="#td" data-goto="ex6">TD ex 6</a></p>
+  </header>
+
+  <h2><span class="num">6.1</span>Trois grands domaines</h2>
+  <div class="grid3">
+    <div class="cell"><h4>Diagnostic de pathologies</h4><p>Recherche de parasites (toxoplasmose), de bactéries (tuberculose), de virus (VIH, SARS-CoV-2).</p></div>
+    <div class="cell"><h4>Diagnostic anténatal</h4><p>Gène portant une mutation connue (mucoviscidose) ; gène comportant une délétion (myopathie de Duchenne).</p></div>
+    <div class="cell"><h4>Criminalistique</h4><p>Comparer l'ADN de suspects à l'ADN retrouvé sur le lieu d'un crime (microsatellites).</p></div>
+  </div>
+
+  <h2><span class="num">6.2</span>Rechercher un agent contaminant</h2>
+  <ul>
+    <li>Une contamination = la <b>présence du matériel génétique du contaminant</b>.</li>
+    <li>La PCR est <b>sensible et spécifique</b>.</li>
+  </ul>
+  <div class="grid3">
+    <div class="cell"><h4>Prélèvement</h4><p>Un échantillon : surface, tissu…</p></div>
+    <div class="cell"><h4>+ Amorces spécifiques</h4><p>D'une séquence d'ADN du micro-organisme suspecté.</p></div>
+    <div class="cell"><h4>= PCR + électrophorèse</h4><p>La taille du produit PCR doit être conforme à celle attendue : c'est ce qui rend le résultat fiable.</p></div>
+  </div>
+  <p><b>PCR multiplex</b> : on peut tester <b>plusieurs agents simultanément</b> avec <b>différents couples d'amorces</b>. Chaque micro-organisme recherché donne un produit d'une taille qui lui est spécifique.</p>
+
+  <h2><span class="num">6.3</span>Détecter une délétion : la mucoviscidose</h2>
+  <ul>
+    <li>Mucoviscidose = <b>déficience de la protéine CFTR</b> (<i>Cystic Fibrosis Transmembrane Regulator</i>) due à une mutation dans le gène.</li>
+    <li>Dans environ <b>90 %</b> des cas, la mutation est une <b>délétion de 3 pb</b>, qui entraîne la <b>délétion de la phénylalanine 508</b> (Phe 508).</li>
+    <li>C'est une maladie <b>autosomique récessive</b>.</li>
+  </ul>
+<div class="seqblock">Allèle normal :  … AT<span class="tg">C TT</span>T GGT …   → Ile 507 · <span class="tg">Phe 508</span> · Gly 509
+Allèle muté   :  … AT- --T GGT …   → Ile 507 · Gly 509
+                      ↑ ↑↑
+                      3 pb supprimées (C, T, T)</div>
+  <div class="box method"><span class="tab">La méthode par PCR (diapo 56)</span><ol>
+    <li>Placer une amorce <b>de chaque côté de la zone de la délétion</b> : la forward en amont (côté 5'), la reverse en aval (côté 3'), orientées l'une vers l'autre.</li>
+    <li>Allèle normal : fragment de <b>50 pb</b>. Allèle muté : il manque 3 pb, fragment de <b>47 pb</b>.</li>
+    <li>Sur gel : la bande de 47 pb migre un peu plus loin que celle de 50 pb.</li>
+  </ol></div>
+  <figure>
+    <div class="fig" data-fig="gelcftr" style="max-width:520px"></div>
+    <figcaption>Représentation simplifiée de la diapo 57 : famille dont la fille est atteinte.</figcaption>
+  </figure>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Ce qu'on voit</th><th>Ce que ça veut dire</th><th>Dans la famille</th></tr></thead>
+    <tbody>
+      <tr><td>Une bande à 50 pb</td><td>Deux allèles normaux</td><td>Le fils</td></tr>
+      <tr><td>Deux bandes, 50 et 47 pb</td><td>Un allèle normal et un allèle muté</td><td>Le père et la mère (non atteints)</td></tr>
+      <tr><td>Une bande à 47 pb</td><td>Deux allèles mutés : la personne est atteinte</td><td>La fille</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="num">6.4</span>Criminalistique : les microsatellites</h2>
+  <ul>
+    <li>Principe : confronter l'ADN d'un suspect à l'ADN retrouvé sur le lieu du crime.</li>
+    <li>L'ADN humain n'est codant qu'à <b>1 à 2 %</b> : plus de 98 % est non codant.</li>
+    <li>Certaines régions sont formées de <b>répétitions d'un motif</b> : ce sont les <b>microsatellites</b>. Exemple : AATAATAATAATAATAATAATAATAATAAT = (AAT)₁₀.</li>
+    <li>Le <b>nombre de répétitions est très variable entre espèces et entre individus</b>, mais la <b>localisation dans le génome est conservée</b>.</li>
+    <li>Ce <b>polymorphisme des microsatellites</b> constitue une <b>empreinte génétique</b>.</li>
+    <li>En France, on analyse <b>13 loci simultanément</b> (13 couples d'amorces). La probabilité que 2 individus non apparentés aient la même empreinte est de <b>1/10¹⁸</b>.</li>
+  </ul>
+  <h3>VNTR (Variable Number Tandem Repeat)</h3>
+  <p>On analyse le nombre de répétitions de plusieurs loci (diapo 59). Même région chez trois individus, motif CTT :</p>
+  <div data-fig="vntr"></div>
+  <div class="box method"><span class="tab">La méthode pour différencier des individus</span><ol>
+    <li>Repérer le motif répété (le microsatellite).</li>
+    <li>Placer les amorces dans les régions qui encadrent le microsatellite, <b>identiques chez tous les individus</b> : forward avant les répétitions, reverse après (complémentaire inverse).</li>
+    <li>Chaque répétition en plus ajoute la longueur du motif au produit PCR. Sur le gel : plus de répétitions = bande plus haute.</li>
+  </ol></div>
+  <figure>
+    <div class="fig" data-fig="gelcrime" style="max-width:600px"></div>
+    <figcaption>Représentation simplifiée de la diapo 60 : les bandes de l'agresseur (prélèvement médico-légal) sont au même niveau que celles du suspect A.</figcaption>
+  </figure>
+
+  <div class="box"><span class="tab">À retenir</span><ul>
+    <li>Contaminant : amorces spécifiques + PCR + gel, taille conforme ; multiplex = plusieurs couples d'amorces.</li>
+    <li>Mucoviscidose : protéine CFTR, délétion de 3 pb (Phe 508) dans 90 % des cas, autosomique récessive. Amorces de part et d'autre : 50 pb (normal) / 47 pb (muté).</li>
+    <li>Microsatellites : répétitions d'un motif, nombre variable entre individus, localisation conservée = empreinte génétique. 13 loci en France, 1/10¹⁸.</li>
+  </ul></div>
+
+  <h2><span class="num">6.5</span>Questions ouvertes</h2>
+  <div class="oq"><p class="q"><b>1.</b> Comment détecter par PCR la délétion de 3 pb du gène CFTR ? Où places-tu les amorces et que vois-tu sur le gel pour une personne saine, porteuse d'un allèle muté, ou atteinte ?</p>
+    <textarea id="oq-b6-1" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Une amorce de chaque côté de la zone de la délétion, orientées l'une vers l'autre. Deux allèles normaux : une bande (ex. 50 pb). Un allèle de chaque : deux bandes (50 et 47 pb). Deux allèles mutés : une bande plus basse (47 pb).</p></div></details></div>
+  <div class="oq"><p class="q"><b>2.</b> Qu'est-ce qu'un microsatellite et pourquoi peut-il servir d'empreinte génétique ?</p>
+    <textarea id="oq-b6-2" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>Une région formée de répétitions d'un court motif, ex. (AAT)₁₀. Le nombre de répétitions varie beaucoup d'un individu à l'autre alors que la localisation dans le génome est conservée. En amplifiant cette région, la taille du produit dépend de l'individu.</p></div></details></div>
+  <div class="oq"><p class="q"><b>3.</b> Comment la PCR permet-elle de rechercher un agent contaminant ? Qu'est-ce qu'une PCR multiplex ?</p>
+    <textarea id="oq-b6-3" data-save aria-label="Ta réponse"></textarea>
+    <details><summary>Éléments de réponse</summary><div class="inner"><p>On prélève un échantillon, on fait une PCR avec des amorces spécifiques d'une séquence du micro-organisme suspecté, puis une électrophorèse : si le produit a la taille attendue, l'agent est présent. La PCR multiplex utilise plusieurs couples d'amorces pour rechercher plusieurs agents en même temps, chacun donnant une taille spécifique.</p></div></details></div>
+
+  <h2><span class="num">6.6</span>QCM du bloc 6</h2>
+  <div class="qcm" data-block="b6"></div>
+  <div class="actions"><a class="btn btn-accent" href="#atelier" data-go="atelier" style="text-decoration:none">Passer à l'atelier →</a></div>
+</section>
+
+<!-- ======================= ATELIER ======================= -->
+<section class="view" id="v-atelier" hidden>
+  <header class="view-head">
+    <p class="eyebrow">Atelier · exercices générés</p>
+    <h1>L'atelier</h1>
+    <p class="lede">Chaque exercice reprend un raisonnement du TD avec de nouvelles séquences à chaque clic sur « Nouvel exercice ». Seule ta première vérification compte dans ton compteur de réussite.</p>
+  </header>
+  <div class="toc" id="drill-toc"></div>
+  <div id="drills"></div>
+</section>
+
+<!-- ======================= TD ======================= -->
+<section class="view" id="v-td" hidden>
+  <header class="view-head">
+    <p class="eyebrow">Exercices du TD PCR · L1</p>
+    <h1>Le TD, à toi de jouer</h1>
+    <p class="lede">Les six exercices de ta feuille. Rédige ta réponse, utilise les vérifications quand il y en a, ouvre les indices un par un si tu bloques, et n'ouvre la correction qu'à la fin.</p>
+  </header>
+  <div class="toc"><a class="chip" href="#td" data-goto="ex1">Ex 1</a><a class="chip" href="#td" data-goto="ex2">Ex 2</a><a class="chip" href="#td" data-goto="ex3">Ex 3</a><a class="chip" href="#td" data-goto="ex4">Ex 4</a><a class="chip" href="#td" data-goto="ex5">Ex 5</a><a class="chip" href="#td" data-goto="ex6">Ex 6</a></div>
+
+  <!-- EX 1 -->
+  <article class="ex" id="ex1">
+    <p class="eyebrow">Exercice 1 · revoir bloc 2.1</p>
+    <h3>ADN à 95 °C</h3>
+    <div class="statement"><p>À 95 °C, l'ADN est-il sous forme simple brin ou double brin ? Pourquoi ?</p></div>
+    <fieldset><legend>Ta réponse rapide</legend>
+      <label class="radio"><input type="radio" name="td1" value="sb"> Simple brin</label>
+      <label class="radio"><input type="radio" name="td1" value="db"> Double brin</label>
+    </fieldset>
+    <label class="f" for="td-ex1" style="margin-top:10px">Justification<textarea id="td-ex1" data-save></textarea></label>
+    <div class="actions"><button class="btn" type="button" data-td="1">Vérifier</button></div>
+    <div data-tdfb="1"></div>
+    <details><summary>Indice</summary><div class="inner"><p>Que se passe-t-il au niveau des liaisons entre les bases quand on augmente la température ? (bloc 2.1, la courbe)</p></div></details>
+    <details class="corr"><summary>Correction</summary><div class="inner"><p>À 95 °C, l'ADN est sous sa forme <b>simple brin</b> car les <b>liaisons hydrogène</b> ne résistent pas à cette température.</p></div></details>
+  </article>
+
+  <!-- EX 2 -->
+  <article class="ex" id="ex2">
+    <p class="eyebrow">Exercice 2 · revoir blocs 1.4 et 3.2</p>
+    <h3>Les trois étapes d'un cycle</h3>
+    <div class="statement"><p>Un cycle de PCR est formé de trois étapes, chacune à une température différente : quels sont les noms de ces étapes et en quoi consistent-elles ?</p></div>
+    <label class="f" for="td-ex2">Ta réponse<textarea id="td-ex2" data-save></textarea></label>
+    <details><summary>Indice</summary><div class="inner"><p>Pense aux trois acteurs de la réplication in vivo et à la phrase de la diapo 5. Pour chaque étape : son nom, ce qui arrive à l'ADN ou aux amorces, et sa température.</p></div></details>
+    <details class="corr"><summary>Correction</summary><div class="inner">
+      <ul>
+        <li><b>Dénaturation</b> de l'ADN : l'ADN double brin passe en simple brin (95 °C).</li>
+        <li><b>Hybridation</b> des amorces : fixation des amorces à l'ADN simple brin matrice (Ta, liée au Tm des amorces).</li>
+        <li><b>Élongation</b> : polymérisation de la séquence d'intérêt à partir de l'amorce (72 °C pour la Taq).</li>
+      </ul>
+      <p class="muted">Les températures entre parenthèses viennent du cours (diapo 45).</p></div></details>
+  </article>
+
+  <!-- EX 3 -->
+  <article class="ex" id="ex3">
+    <p class="eyebrow">Exercice 3 · revoir bloc 3 · atelier 1, 4 et 5</p>
+    <h3>Un couple d'amorces à vérifier</h3>
+    <div class="statement">
+      <p>Pour réaliser une PCR, on souhaite utiliser le couple d'amorces suivant :</p>
+      <p><span class="seq">GTACTATCGATCGATTGGGC</span> &nbsp;&nbsp; <span class="seq">ATAATGATCGCTACTAGTAT</span></p>
+      <p><b>A.</b> Dans quelle orientation sont écrites ces amorces ?<br>
+      <b>B.</b> Calculer le Tm de chaque amorce, sont-elles compatibles ? Si non, modifier le couple d'amorces pour amplifier <u>exactement la même région</u>.<br>
+      <b>C.</b> Détailler les étapes de cette PCR sachant que l'on souhaite amplifier une région de 940 pb avec les amorces précédentes (B.). On utilise la Taq polymérase qui peut amplifier 1000 pb/min lorsqu'elle est utilisée à sa température optimale (72 °C).</p>
+    </div>
+    <h4 style="margin:14px 0 6px">A · Orientation</h4>
+    <fieldset><legend>Ces amorces sont écrites…</legend>
+      <label class="radio"><input type="radio" name="td3a" value="53"> de 5' vers 3'</label>
+      <label class="radio"><input type="radio" name="td3a" value="35"> de 3' vers 5'</label>
+    </fieldset>
+    <h4 style="margin:18px 0 6px">B · Tm et compatibilité</h4>
+    <div class="fields">
+      <label class="f" for="td3-tm1">Tm de GTACTATCGATCGATTGGGC (°C)<input type="number" id="td3-tm1" inputmode="numeric"></label>
+      <label class="f" for="td3-tm2">Tm de ATAATGATCGCTACTAGTAT (°C)<input type="number" id="td3-tm2" inputmode="numeric"></label>
+    </div>
+    <fieldset><legend>Le couple est-il compatible ?</legend>
+      <label class="radio"><input type="radio" name="td3c" value="oui"> Oui</label>
+      <label class="radio"><input type="radio" name="td3c" value="non"> Non</label>
+    </fieldset>
+    <div class="fields">
+      <label class="f" for="td3-which">Amorce que tu modifies<select id="td3-which"><option value="">—</option><option value="1">GTACTATCGATCGATTGGGC</option><option value="2">ATAATGATCGCTACTAGTAT</option></select></label>
+      <label class="f" for="td3-new">Nouvelle séquence (5'→3')<input type="text" class="seqin" id="td3-new" autocomplete="off" spellcheck="false"></label>
+    </div>
+    <h4 style="margin:18px 0 6px">C · Programme</h4>
+    <div class="fields">
+      <label class="f" for="td3-el">Temps d'élongation (s)<input type="text" id="td3-el" inputmode="decimal"></label>
+      <label class="f" for="td3-ta">Température d'hybridation (°C)<input type="number" id="td3-ta" inputmode="numeric"></label>
+    </div>
+    <label class="f" for="td-ex3">Rédige le programme complet<textarea id="td-ex3" data-save></textarea></label>
+    <div class="actions"><button class="btn" type="button" data-td="3">Vérifier A, B et C</button></div>
+    <div data-tdfb="3"></div>
+    <details><summary>Indice 1 (A et B)</summary><div class="inner"><p>Quand rien n'est indiqué, dans quel sens écrit-on toujours une amorce ? Pour le Tm : compte A+T et G+C, puis Tm = 2(A+T) + 4(G+C). Deux règles : 50–60 °C, ΔTm &lt; 5 °C.</p></div></details>
+    <details><summary>Indice 2 (modifier le couple)</summary><div class="inner"><p>Pour garder exactement la même région, l'extrémité 5' de l'amorce ne doit pas bouger. Quelle amorce a le Tm trop élevé ? Retire des nucléotides à son autre extrémité.</p></div></details>
+    <details><summary>Indice 3 (C)</summary><div class="inner"><p>1000 pb → 60 s, 940 pb → ? Pour l'hybridation, prends le Tm le plus bas du couple final.</p></div></details>
+    <details class="corr"><summary>Correction</summary><div class="inner">
+      <p><b>A.</b> Dans le sens <b>5'→3'</b> (car rien ne nous est indiqué).</p>
+      <p><b>B.</b></p>
+<div class="seqblock">Forward : 5'-GTACTATCGATCGATTGGGC-3'   20 nt
+  Tm = 2 × (A+T) + 4 × (G+C) = 2 × 10 + 4 × 10 = 60 °C
+Reverse : 5'-ATAATGATCGCTACTAGTAT-3'   20 nt
+  Tm = 2 × 14 + 4 × 6 = 52 °C</div>
+      <p>ΔTm = 8 °C &gt; 5 °C : <b>pas compatibles</b>. On raccourcit la forward par son extrémité 3' :</p>
+<div class="seqblock">Après modification : 5'-GTACTATCGATCGATTGG-3'   18 nt
+  Tm = 2 × 10 + 4 × 8 = 52 °C</div>
+      <p class="muted">La version à 19 nt (…TTGGG-3', Tm = 56 °C, ΔTm = 4 °C) respecte aussi les règles ; la correction retient celle à 18 nt, dont le Tm est identique à celui de la reverse.</p>
+      <p><b>C.</b> Élongation : 1000 pb → 60 s, donc 940 pb → 60 × 940 / 1000 = <b>56,4 s</b>.</p>
+<div class="seqblock">Dénaturation initiale    95 °C   2 min   (5 min accepté)
+          ┌ Dénaturation     95 °C   30 s
+× 30 à 35 ┤ Hybridation      52 °C   30 s
+          └ Élongation       72 °C   56 s
+Élongation finale        72 °C   5 min   (10 min accepté)</div>
+    </div></details>
+  </article>
+
+  <!-- EX 4 -->
+  <article class="ex" id="ex4">
+    <p class="eyebrow">Exercice 4 · revoir bloc 4 · atelier 6</p>
+    <h3>Compter et dessiner les molécules</h3>
+    <div class="statement"><p>Si l'on effectue une PCR en partant d'une seule molécule d'ADN, combien de molécules obtiendra-t-on après le 1<sup>er</sup> cycle ? Même question après le 2<sup>e</sup>, le 3<sup>e</sup> et le 4<sup>e</sup> cycle ? Réaliser un schéma des molécules d'ADN obtenues après ces cycles (1<sup>er</sup>, 2<sup>e</sup>, 3<sup>e</sup> et 4<sup>e</sup>) en indiquant l'orientation des brins d'ADN et en mettant en évidence les amorces et leur orientation. L'utilisation de différentes couleurs est recommandée.</p></div>
+    <div class="fields">
+      <label class="f" for="td4-1">Après le cycle 1<input type="number" id="td4-1"></label>
+      <label class="f" for="td4-2">Après le cycle 2<input type="number" id="td4-2"></label>
+      <label class="f" for="td4-3">Après le cycle 3<input type="number" id="td4-3"></label>
+      <label class="f" for="td4-4">Après le cycle 4<input type="number" id="td4-4"></label>
+    </div>
+    <div class="actions"><button class="btn" type="button" data-td="4">Vérifier</button></div>
+    <div data-tdfb="4"></div>
+    <p class="muted" style="margin-top:12px">Pour le schéma : fais-le sur papier, puis compare avec la correction.</p>
+    <details><summary>Indice</summary><div class="inner"><p>Chaque molécule est recopiée à chaque cycle. Pour le schéma : chaque nouveau brin commence par une amorce et s'arrête au bout du brin qu'il recopie (bloc 4.1).</p></div></details>
+    <details class="corr"><summary>Correction</summary><div class="inner">
+      <p><b>2, 4, 8 et 16 molécules</b> (le nombre double à chaque cycle). Schémas : cf. diapos 27 à 37 du cours, reproduits ci-dessous.</p>
+      <div data-fig="td4" class="grid2"></div>
+    </div></details>
+  </article>
+
+  <!-- EX 5 -->
+  <article class="ex" id="ex5">
+    <p class="eyebrow">Exercice 5 · revoir blocs 5 et 6.3 · atelier 8</p>
+    <h3>Détecter la délétion de la mucoviscidose</h3>
+    <div class="statement">
+      <p>La mucoviscidose est une maladie génétique due à l'absence ou la déficience fonctionnelle de la protéine CFTR (<i>Cystic Fibrosis Transmembrane Regulator</i>). Ci-dessous est indiquée la portion du gène CFTR pouvant présenter une délétion à l'origine de la maladie. Proposez une méthode pour détecter cette délétion par PCR. Où placez-vous vos amorces ? Réaliser un <u>schéma</u> (inutile d'indiquer les séquences) et placer les amorces avec leur orientation (sans indiquer leur séquence). Quel résultat attendez-vous selon que la personne testée possède un gène sauvage ou muté ? Réaliser un schéma du résultat attendu pour une personne saine et une personne portant l'allèle muté.</p>
+<div class="seqblock">5'- … … AAT ATC AT<b>C TT</b>T GGT GTT TCC TAT … …  -3'   Allèle sauvage
+    … … Asn Ile Ile Phe Gly Val Ser Tyr … …
+
+5'- … … AAT ATC AT[   ]T GGT GTT TCC TAT … …  -3'   Allèle muté
+    … … Asn Ile Ile     Gly Val Ser Tyr … …</div>
+    </div>
+    <label class="f" for="td-ex5">Ta méthode et ton raisonnement<textarea id="td-ex5" data-save></textarea></label>
+    <fieldset style="margin-top:12px"><legend>Sur le gel, quelle bande migre le plus loin ?</legend>
+      <label class="radio"><input type="radio" name="td5" value="mut"> Celle de l'allèle muté</label>
+      <label class="radio"><input type="radio" name="td5" value="wt"> Celle de l'allèle sauvage</label>
+      <label class="radio"><input type="radio" name="td5" value="eq"> Elles sont au même niveau</label>
+    </fieldset>
+    <label class="f" for="td5-d" style="margin-top:10px;max-width:260px">Taille de la délétion (pb)<input type="number" id="td5-d"></label>
+    <div class="actions"><button class="btn" type="button" data-td="5">Vérifier</button></div>
+    <div data-tdfb="5"></div>
+    <details><summary>Indice 1</summary><div class="inner"><p>Compare les deux séquences : combien de nucléotides manquent ? Quel acide aminé disparaît ?</p></div></details>
+    <details><summary>Indice 2</summary><div class="inner"><p>Les amorces doivent encadrer la zone de la délétion, une de chaque côté, orientées l'une vers l'autre. Qu'est-ce qui change alors dans le produit PCR de l'allèle muté ?</p></div></details>
+    <details class="corr"><summary>Correction</summary><div class="inner">
+      <p>On place les amorces <b>de part et d'autre de la délétion</b> : la forward en amont (à gauche, orientée vers la droite), la reverse en aval (à droite, orientée vers la gauche).</p>
+      <div data-fig="td5"></div>
+      <p><b>Résultat attendu</b> : délétion de <b>3 pb</b> (C, T, T) pour l'allèle muté, qui fait perdre la Phe. Le produit PCR de l'allèle muté est 3 pb plus court : sa bande migre un peu plus loin.</p>
+      <div class="fig" data-fig="td5gel" style="max-width:360px"></div>
+    </div></details>
+  </article>
+
+  <!-- EX 6 -->
+  <article class="ex" id="ex6">
+    <p class="eyebrow">Exercice 6 · revoir blocs 3, 5 et 6.4 · atelier 2 et 7</p>
+    <h3>Microsatellites et empreinte génétique</h3>
+    <div class="statement">
+      <p>Le polymorphisme des microsatellites peut être utilisé comme empreinte génétique afin d'identifier un individu. Ci-dessous est représentée la même région du génome humain chez trois individus différents.</p>
+      <p><b>A.</b> Identifier le microsatellite dans cette séquence.<br>
+      <b>B.</b> Proposer un couple d'amorces permettant de différencier ces trois individus par PCR et réaliser un schéma du résultat attendu (ces trois individus sont homozygotes pour ce microsatellite).</p>
+      <div data-fig="td6seq"></div>
+    </div>
+    <div class="fields">
+      <label class="f" for="td6-m">A · Motif répété<input type="text" class="seqin" id="td6-m" autocomplete="off" spellcheck="false"></label>
+      <label class="f" for="td6-k1">Répétitions · individu 1<input type="number" id="td6-k1"></label>
+      <label class="f" for="td6-k2">Répétitions · individu 2<input type="number" id="td6-k2"></label>
+      <label class="f" for="td6-k3">Répétitions · individu 3<input type="number" id="td6-k3"></label>
+    </div>
+    <div class="fields">
+      <label class="f" for="td6-f">B · Amorce forward (5'→3')<input type="text" class="seqin" id="td6-f" autocomplete="off" spellcheck="false"></label>
+      <label class="f" for="td6-r">B · Amorce reverse (5'→3')<input type="text" class="seqin" id="td6-r" autocomplete="off" spellcheck="false"></label>
+    </div>
+    <label class="f" for="td6-o" style="max-width:340px">Quel individu donne la bande la plus basse ?<select id="td6-o"><option value="">—</option><option value="1">Individu 1</option><option value="2">Individu 2</option><option value="3">Individu 3</option></select></label>
+    <div class="actions"><button class="btn" type="button" data-td="6">Vérifier A et B</button></div>
+    <div data-tdfb="6"></div>
+    <details><summary>Indice 1 (A)</summary><div class="inner"><p>Aligne les trois séquences : le début et la fin sont identiques. Ce qui change, c'est le nombre de fois qu'un court motif est répété au milieu.</p></div></details>
+    <details><summary>Indice 2 (B)</summary><div class="inner"><p>Les amorces doivent être dans les régions identiques chez les trois individus, de part et d'autre des répétitions. Forward = début de la séquence recopié. Reverse = complémentaire inverse de la fin. Vérifie longueur (18–30 nt) et Tm (50–60 °C, ΔTm &lt; 5 °C).</p></div></details>
+    <details class="corr"><summary>Correction</summary><div class="inner">
+      <p><b>A.</b> Motif du microsatellite = <b>CTT</b> (6, 7 et 8 répétitions chez les individus 1, 2 et 3).</p>
+      <p><b>B.</b> Couple d'amorces :</p>
+<div class="seqblock">Forward : 5'-ATTCGATCATGCTCCAGG-3'   (Tm = 54 °C)
+Reverse : 5'-ATCGGCCGTTAAATCGTT-3'   (Tm = 52 °C)</div>
+      <p>Avec ces amorces, les produits font 68, 71 et 74 pb (longueur des séquences données). Résultat attendu sur gel :</p>
+      <div class="fig" data-fig="td6gel" style="max-width:380px"></div>
+      <p class="muted">L'individu 1 (le moins de répétitions) a la bande la plus basse, l'individu 3 la plus haute.</p>
+    </div></details>
+  </article>
+</section>
+
+</main>
+</div>
+
+<script>
+(function(){
+"use strict";
+/* ================= utilitaires ================= */
+var store={
+  get:function(k,d){try{var v=localStorage.getItem("cpcr:"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
+  set:function(k,v){try{localStorage.setItem("cpcr:"+k,JSON.stringify(v))}catch(e){}},
+  clear:function(){try{Object.keys(localStorage).forEach(function(k){if(k.indexOf("cpcr:")===0)localStorage.removeItem(k)})}catch(e){}}
+};
+function $(s,r){return (r||document).querySelector(s)}
+function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+function rand(n){return Math.floor(Math.random()*n)}
+function pick(a){return a[rand(a.length)]}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=rand(i+1);var t=a[i];a[i]=a[j];a[j]=t}return a}
+var CMP={A:"T",T:"A",G:"C",C:"G"};
+function comp(s){return s.split("").map(function(b){return CMP[b]||b}).join("")}
+function rev(s){return s.split("").reverse().join("")}
+function rc(s){return rev(comp(s))}
+function cnt(s,set){var n=0;for(var i=0;i<s.length;i++)if(set.indexOf(s[i])>=0)n++;return n}
+function tm(s){return 2*cnt(s,"AT")+4*cnt(s,"GC")}
+function clean(s){return String(s||"").toUpperCase().replace(/5'|3'|5’|3’/g,"").replace(/[^ACGT]/g,"")}
+function randSeq(n){var s="";for(var i=0;i<n;i++)s+="ACGT"[rand(4)];return s}
+function seqExactTm(L,t){var gc=(t-2*L)/2;if(gc<0||gc>L||gc%1)return null;for(var k=0;k<200;k++){var a=[];for(var i=0;i<L;i++)a.push(i<gc?pick("GC"):pick("AT"));var s=shuffle(a).join("");if(!/(.)\1\1\1/.test(s))return s}return s}
+function evenIn(lo,hi){var v=lo+2*rand((hi-lo)/2+1);return v}
+function num(v){if(v==null)return NaN;v=String(v).trim().replace(",",".");if(v==="")return NaN;return parseFloat(v)}
+function fr(x){var r=Math.round(x*100)/100;return String(r).replace(".",",")}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function tmDetail(s){var at=cnt(s,"AT"),gc=cnt(s,"GC");return "A+T = "+at+", G+C = "+gc+" → 2 × "+at+" + 4 × "+gc+" = "+(2*at)+" + "+(4*gc)+" = <b>"+tm(s)+" °C</b>"}
+function mark(ok){return ok?'<span class="ok-mark">✓</span>':'<span class="ko-mark">✗</span>'}
+function radioVal(name,root){var r=(root||document).querySelector('input[name="'+name+'"]:checked');return r?r.value:""}
+function maxRepeat(s,m){var best=0;for(var i=0;i<s.length;i++){var k=0;while(s.substr(i+k*m.length,m.length)===m)k++;if(k>best)best=k}return best}
+
+/* ================= figures ================= */
+function profileSVG(){
+  var W=720,H=250,y95=48,y72=104,yta=150,yrt=214;
+  var d="M52,"+yrt+" L70,"+y95+" H150 L162,"+yta+" H198 L206,"+y72+" H246 L254,"+y95+" H278 L290,"+yta+" H326 L334,"+y72+" H374 M374,"+y72+" L382,"+y95;
+  var d2="M430,"+y95+" H454 L466,"+yta+" H502 L510,"+y72+" H676 L690,"+yrt;
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Profil de température d\'une PCR : 95 °C initial, puis cycles 95 °C, Ta, 72 °C répétés 30 à 35 fois, puis 72 °C final">';
+  s+='<line class="grid-l" x1="46" y1="'+y95+'" x2="700" y2="'+y95+'"/><line class="grid-l" x1="46" y1="'+y72+'" x2="700" y2="'+y72+'"/><line class="grid-l" x1="46" y1="'+yta+'" x2="700" y2="'+yta+'"/>';
+  s+='<text class="pf-t" x="40" y="'+(y95+4)+'" text-anchor="end">95 °C</text><text class="pf-t" x="40" y="'+(y72+4)+'" text-anchor="end">72 °C</text><text class="pf-t" x="40" y="'+(yta+4)+'" text-anchor="end">Ta</text>';
+  s+='<path class="pf-line" d="'+d+'"/><path class="pf-brk" d="M382,'+y95+' H430"/><path class="pf-line" d="'+d2+'"/>';
+  var seg=function(x1,x2,y,c){return '<line class="'+c+'" x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'"/>'};
+  s+=seg(72,148,y95,"pf-95");
+  [[152,198],[280,326],[456,502]].forEach(function(p){s+=seg(p[0]+12,p[1],yta,"pf-ta")});
+  [[206,246],[334,374],[510,560]].forEach(function(p){s+=seg(p[0]+2,p[1],y72,"pf-72")});
+  [[254,278],[382,382],[430,454]].forEach(function(p){if(p[1]>p[0])s+=seg(p[0]+2,p[1],y95,"pf-95")});
+  s+=seg(566,674,y72,"pf-72");
+  s+='<path class="axis" d="M156,26 V20 H558 V26"/><text class="pf-h" x="357" y="16" text-anchor="middle">② cycle × 30 à 35</text>';
+  s+='<text class="pf-h" x="110" y="'+(y95-10)+'" text-anchor="middle">①</text><text class="pf-h" x="620" y="'+(y72-10)+'" text-anchor="middle">③</text>';
+  s+='<text class="pf-t" x="180" y="'+(yta+22)+'" text-anchor="middle">❷</text><text class="pf-t" x="226" y="'+(y72+22)+'" text-anchor="middle">❸</text><text class="pf-t" x="266" y="'+(y95+22)+'" text-anchor="middle">❶</text>';
+  s+='<text class="pf-t" x="52" y="238">temps →</text>';
+  return s+"</svg>";
+}
+function meltSVG(T){
+  var x0=70,x1=500,yb=210,yt=30;
+  function P(t){return 100/(1+Math.exp(-(t-50)/8))}
+  function X(t){return x0+(x1-x0)*t/100}
+  function Y(p){return yb-(yb-yt)*p/100}
+  var d="";for(var t=0;t<=100;t+=2)d+=(t?"L":"M")+X(t).toFixed(1)+","+Y(P(t)).toFixed(1)+" ";
+  var p=P(T);
+  var s='<svg viewBox="0 0 540 250" role="img" aria-label="Courbe de dénaturation de l\'ADN">';
+  s+='<path class="axis" d="M'+x0+','+yt+' V'+yb+' H'+(x1+10)+'"/>';
+  s+='<text class="pf-t" x="'+(x0-8)+'" y="'+(Y(100)+4)+'" text-anchor="end">100 %</text><text class="pf-t" x="'+(x0-8)+'" y="'+(Y(50)+4)+'" text-anchor="end">50 %</text><text class="pf-t" x="'+(x0-8)+'" y="'+(Y(0)+4)+'" text-anchor="end">0 %</text>';
+  s+='<path class="dash" d="M'+x0+','+Y(50)+' H'+X(50)+' V'+yb+'"/><text class="lab-b" x="'+X(50)+'" y="'+(yb+18)+'" text-anchor="middle">Tm</text>';
+  s+='<path class="curve" d="'+d+'"/>';
+  s+='<circle cx="'+X(T)+'" cy="'+Y(p)+'" r="7" class="k-tg"/>';
+  s+='<text class="pf-t" x="'+x0+'" y="'+(yb+34)+'">basse température</text><text class="pf-t" x="'+x1+'" y="'+(yb+34)+'" text-anchor="end">forte température</text>';
+  s+='<text class="pf-t" x="'+(x0+6)+'" y="'+(yt-10)+'">% de bases non appariées</text>';
+  // mini brins
+  var gap=4+20*p/100, n=10, keep=Math.round(n*(1-p/100));
+  var g='<g transform="translate(350,176)">';
+  g+='<line class="s k-dna" x1="0" y1="'+(-gap)+'" x2="140" y2="'+(-gap)+'"/>';
+  g+='<line class="s k-dna" x1="0" y1="'+gap+'" x2="140" y2="'+gap+'"/>';
+  for(var i=0;i<keep;i++){var xx=8+i*14;g+='<line class="tick" x1="'+xx+'" y1="'+(-gap+4)+'" x2="'+xx+'" y2="'+(gap-4)+'"/>'}
+  g+='</g>';
+  return s+(p>2?"":"")+g+"</svg>";
+}
+function primersSVG(){
+  var s='<svg viewBox="0 0 660 190" role="img" aria-label="Position des amorces forward et reverse de part et d\'autre de la région à amplifier">';
+  var yT=56,yB=150,a=210,b=450;
+  s+='<line class="s k-dna" x1="40" y1="'+yT+'" x2="620" y2="'+yT+'"/><line class="s k-tg" x1="'+a+'" y1="'+yT+'" x2="'+b+'" y2="'+yT+'"/>';
+  s+='<line class="s k-dna" x1="40" y1="'+yB+'" x2="620" y2="'+yB+'"/><line class="s k-tg" x1="'+a+'" y1="'+yB+'" x2="'+b+'" y2="'+yB+'"/>';
+  s+='<text class="lab-ink" x="30" y="'+(yT+4)+'" text-anchor="end">5\'</text><text class="lab-ink" x="630" y="'+(yT+4)+'">3\'</text>';
+  s+='<text class="lab-ink" x="30" y="'+(yB+4)+'" text-anchor="end">3\'</text><text class="lab-ink" x="630" y="'+(yB+4)+'">5\'</text>';
+  // reverse primer under top strand at right
+  s+='<line class="s k-r" x1="'+(b-70)+'" y1="'+(yT+26)+'" x2="'+b+'" y2="'+(yT+26)+'"/><polygon class="k-r" points="'+(b-78)+','+(yT+26)+' '+(b-66)+','+(yT+19)+' '+(b-66)+','+(yT+33)+'"/>';
+  for(var i=0;i<4;i++)s+='<line class="tick" x1="'+(b-60+i*16)+'" y1="'+(yT+5)+'" x2="'+(b-60+i*16)+'" y2="'+(yT+21)+'"/>';
+  s+='<text class="lab" x="'+(b-84)+'" y="'+(yT+30)+'" text-anchor="end">3\'</text><text class="lab" x="'+(b+8)+'" y="'+(yT+30)+'">5\'</text>';
+  s+='<text class="lab-b" x="'+(b+30)+'" y="'+(yT+30)+'">amorce reverse (droite)</text>';
+  // forward primer above bottom strand at left
+  s+='<line class="s k-f" x1="'+a+'" y1="'+(yB-26)+'" x2="'+(a+70)+'" y2="'+(yB-26)+'"/><polygon class="k-f" points="'+(a+78)+','+(yB-26)+' '+(a+66)+','+(yB-33)+' '+(a+66)+','+(yB-19)+'"/>';
+  for(i=0;i<4;i++)s+='<line class="tick" x1="'+(a+10+i*16)+'" y1="'+(yB-21)+'" x2="'+(a+10+i*16)+'" y2="'+(yB-5)+'"/>';
+  s+='<text class="lab" x="'+(a-8)+'" y="'+(yB-22)+'" text-anchor="end">5\'</text><text class="lab" x="'+(a+86)+'" y="'+(yB-22)+'">3\'</text>';
+  s+='<text class="lab-b" x="'+(a-30)+'" y="'+(yB-22)+'" text-anchor="end">amorce forward (gauche)</text>';
+  s+='<text class="lab" x="'+((a+b)/2)+'" y="'+(yT-12)+'" text-anchor="middle">région à amplifier</text>';
+  return s+"</svg>";
+}
+/* ---- brins & molécules ---- */
+var G={x0:46,x1:590,a:220,b:410,p:36};
+var PARTNER={"O+":"L-","O-":"L+","L+":"C-","L-":"C+","C+":"C-","C-":"C+"};
+function spanOf(t){if(t[0]==="O")return[G.x0,G.x1];if(t==="L+")return[G.a,G.x1];if(t==="L-")return[G.x0,G.b];if(t==="P+")return[G.a,G.a+G.p];if(t==="P-")return[G.b-G.p,G.b];return[G.a,G.b]}
+function head(x,y,dir,cls){var s=6;return '<polygon class="'+cls+'" points="'+x+','+y+' '+(x-dir*9)+','+(y-s)+' '+(x-dir*9)+','+(y+s)+'"/>'}
+function ln(x1,x2,y,c){return '<line class="s '+c+'" x1="'+x1+'" y1="'+y+'" x2="'+x2+'" y2="'+y+'"/>'}
+function strand(t,y){
+  var o="",plus=t[1]==="+",sp=spanOf(t);
+  if(t[0]==="O"){o+=ln(G.x0,G.x1,y,"k-dna")+ln(G.a,G.b,y,"k-tg");o+=plus?head(G.x1+8,y,1,"k-dna"):head(G.x0-8,y,-1,"k-dna")}
+  else if(t==="P+"){o+=ln(G.a,G.a+G.p,y,"k-f")+head(G.a+G.p+8,y,1,"k-f")}
+  else if(t==="P-"){o+=ln(G.b-G.p,G.b,y,"k-r")+head(G.b-G.p-8,y,-1,"k-r")}
+  else if(plus){o+=ln(G.a,G.a+G.p,y,"k-f")+ln(G.a+G.p,sp[1],y,"k-fe")+head(sp[1]+8,y,1,"k-fe")}
+  else{o+=ln(G.b-G.p,G.b,y,"k-r")+ln(sp[0],G.b-G.p,y,"k-re")+head(sp[0]-8,y,-1,"k-re")}
+  var l=plus?"5'":"3'",r=plus?"3'":"5'";
+  o+='<text class="lab" x="'+(sp[0]-14)+'" y="'+(y+3.5)+'" text-anchor="end">'+l+'</text><text class="lab" x="'+(sp[1]+14)+'" y="'+(y+3.5)+'">'+r+'</text>';
+  return o;
+}
+function ticks(t1,t2,y1,y2){var a=spanOf(t1),b=spanOf(t2),s=Math.max(a[0],b[0])+6,e=Math.min(a[1],b[1])-6,o="";for(var x=s;x<=e;x+=14)o+='<line class="tick" x1="'+x+'" y1="'+(y1+4)+'" x2="'+x+'" y2="'+(y2-4)+'"/>';return o}
+function isAmp(m){return m[0]==="C+"&&m[1]==="C-"}
+function drawRows(rows,aria){
+  var DY=18,y=22,o="";
+  rows.forEach(function(r){
+    if(r.k==="mol"){var t=r.m[0],b=r.m[1];if(isAmp(r.m))o+='<rect class="halo" x="'+(G.a-14)+'" y="'+(y-11)+'" width="'+(G.b-G.a+28)+'" height="'+(DY+22)+'" rx="9"/>';o+=ticks(t,b,y,y+DY)+strand(t,y)+strand(b,y+DY);y+=DY+30}
+    else if(r.k==="one"){o+=strand(r.s,y);y+=30}
+    else if(r.k==="hyb"){var s=r.s,plus=s[1]==="+";if(plus){o+=ticks(s,"P-",y,y+DY)+strand(s,y)+strand("P-",y+DY)}else{o+=ticks("P+",s,y,y+DY)+strand("P+",y)+strand(s,y+DY)}y+=DY+30}
+  });
+  return '<svg viewBox="0 0 640 '+(y-6)+'" role="img" aria-label="'+esc(aria||"Schéma des brins d'ADN")+'">'+o+"</svg>";
+}
+function molsAfter(n){var m=[["O+","O-"]];for(var i=0;i<n;i++){var out=[];m.forEach(function(x){out.push([x[0],PARTNER[x[0]]]);out.push([PARTNER[x[1]],x[1]])});m=out}return m}
+function strandsOf(m){var s=[];m.forEach(function(x){s.push(x[0]);s.push(x[1])});return s}
+var CAP={
+  0:"Départ : une seule molécule d'ADN double brin. La région à amplifier est en rouge.",
+  "1denat":"Cycle 1 · ❶ Dénaturation (95 °C, 30 s) : les liaisons hydrogène se rompent, les deux brins se séparent.",
+  "1hyb":"Cycle 1 · ❷ Hybridation (Ta, 30 s) : l'amorce forward (violette) se fixe sur le brin du bas, l'amorce reverse (rose) sur le brin du haut, de part et d'autre de la région.",
+  "1elong":"Cycle 1 · ❸ Élongation (72 °C) : la polymérase allonge chaque amorce de 5' vers 3' jusqu'au bout du brin original. 2 molécules : brin original + brin long.",
+  "2elong":"Fin du cycle 2 : 4 molécules. Sur les brins longs, la polymérase s'arrête au bout, au niveau de l'autre amorce : apparition des premiers brins courts. Encore aucun amplicon d'intérêt.",
+  "3elong":"Fin du cycle 3 : 8 molécules, dont les 2 premiers amplicons d'intérêt (surlignés) formés de deux brins courts.",
+  "4elong":"Fin du cycle 4 : 16 molécules, dont 8 amplicons d'intérêt."
+};
+function mountSim(el,mode){
+  var mini=mode==="mini";
+  var st={c:mini?1:0,p:mini?"denat":"elong"};
+  var cycBtns=mini?"":'<div class="seg" data-r="c">'+[0,1,2,3,4].map(function(c){return '<button type="button" data-c="'+c+'">'+(c?"Cycle "+c:"Départ")+"</button>"}).join("")+"</div>";
+  el.innerHTML='<div class="sim-ctrl">'+cycBtns+'<div class="seg" data-r="p"><button type="button" data-p="denat">❶ Dénaturation · 95 °C</button><button type="button" data-p="hyb">❷ Hybridation · Ta</button><button type="button" data-p="elong">❸ Élongation · 72 °C</button></div></div>'+(mini?"":'<div class="sim-stats"></div>')+'<div class="sim-fig"></div><p class="sim-cap"></p><div class="legend"><span><i style="background:var(--dna)"></i>brin original</span><span><i style="background:var(--target)"></i>région cible</span><span><i style="background:var(--fwd)"></i>amorce forward</span><span><i style="background:var(--fwd-ext)"></i>allongement forward</span><span><i style="background:var(--rev)"></i>amorce reverse</span><span><i style="background:var(--rev-ext)"></i>allongement reverse</span>'+(mini?"":'<span><i style="background:var(--accent)"></i>amplicon d\'intérêt</span>')+"</div>";
+  function render(){
+    var rows,cap;
+    if(st.c===0){rows=[{k:"mol",m:["O+","O-"]}];cap=CAP[0]}
+    else if(st.p==="denat"){rows=strandsOf(molsAfter(st.c-1)).map(function(s){return{k:"one",s:s}});cap=CAP[st.c+"denat"]||("Cycle "+st.c+" · ❶ Dénaturation : les "+Math.pow(2,st.c-1)+" molécules du cycle précédent donnent "+Math.pow(2,st.c)+" brins simples.")}
+    else if(st.p==="hyb"){rows=strandsOf(molsAfter(st.c-1)).map(function(s){return{k:"hyb",s:s}});cap=CAP[st.c+"hyb"]||("Cycle "+st.c+" · ❷ Hybridation : chaque brin reçoit une amorce. La forward se fixe sur les brins orientés 3'→5', la reverse sur les brins orientés 5'→3'.")}
+    else{rows=molsAfter(st.c).map(function(m){return{k:"mol",m:m}});cap=CAP[st.c+"elong"]}
+    $(".sim-fig",el).innerHTML=drawRows(rows,cap);
+    $(".sim-cap",el).textContent=cap;
+    var stats=$(".sim-stats",el);
+    if(stats){var m=st.c===0?[["O+","O-"]]:molsAfter(st.p==="elong"?st.c:st.c-1);var amp=m.filter(isAmp).length;stats.innerHTML=(st.p==="elong"||st.c===0?"Molécules d'ADN : <b>"+m.length+"</b> · Amplicons d'intérêt : <b>"+amp+"</b>":"Brins simples : <b>"+(m.length*2)+"</b>")}
+    $$("[data-c]",el).forEach(function(b){b.setAttribute("aria-pressed",String(+b.dataset.c===st.c))});
+    $$("[data-p]",el).forEach(function(b){b.setAttribute("aria-pressed",String(st.c>0&&b.dataset.p===st.p));b.disabled=st.c===0});
+  }
+  el.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;if(b.dataset.c!=null){st.c=+b.dataset.c;st.p="elong";render()}else if(b.dataset.p){st.p=b.dataset.p;render()}});
+  render();
+}
+/* ---- gel ---- */
+function gelSVG(o){
+  var lw=o.laneW||58,left=40,top=30,H=o.h||210,nL=o.lanes.length,gw=nL*lw+16,right=o.sizes?70:28,W=left+gw+right;
+  var L=Math.log,y=function(sz){return top+18+(1-(L(sz)-L(o.min))/(L(o.max)-L(o.min)))*(H-34)};
+  var s='<svg viewBox="0 0 '+W+' '+(top+H+8)+'" role="img" aria-label="'+esc(o.aria||"Gel d'électrophorèse")+'">';
+  s+='<rect class="gel-bg" x="'+left+'" y="'+top+'" width="'+gw+'" height="'+H+'" rx="6"/>';
+  s+='<text class="gel-pole" x="'+(left-10)+'" y="'+(top+16)+'" text-anchor="end">−</text><text class="gel-pole" x="'+(left-10)+'" y="'+(top+H-6)+'" text-anchor="end">+</text>';
+  o.lanes.forEach(function(ln,i){var cx=left+8+i*lw+lw/2;s+='<text class="gel-lab" x="'+cx+'" y="'+(top-10)+'" text-anchor="middle">'+esc(ln.lab)+'</text>';s+='<rect class="gel-well" x="'+(cx-lw/2+8)+'" y="'+(top+8)+'" width="'+(lw-16)+'" height="5" rx="1"/>';(ln.bands||[]).forEach(function(b){var it=b[1]==null?1:b[1];if(it>0)s+='<rect class="gel-band" x="'+(cx-lw/2+8)+'" y="'+(y(b[0])-2.5).toFixed(1)+'" width="'+(lw-16)+'" height="5" rx="1.5" style="opacity:'+it+'"/>'})});
+  (o.sizes||[]).forEach(function(z){s+='<text class="gel-size" x="'+(left+gw+8)+'" y="'+(y(z[0])+4).toFixed(1)+'">'+esc(z[1])+'</text>'});
+  if(!o.sizes){var ax=left+gw+14;s+='<line class="gel-arrow" x1="'+ax+'" y1="'+(top+12)+'" x2="'+ax+'" y2="'+(top+H-14)+'"/><polygon class="gel-arrowhead" points="'+ax+','+(top+H-6)+' '+(ax-5)+','+(top+H-16)+' '+(ax+5)+','+(top+H-16)+'"/>'}
+  return s+"</svg>";
+}
+function renderFigs(){
+  $$('[data-fig="profile"]').forEach(function(e){e.innerHTML=profileSVG()});
+  $$('[data-fig="primers"]').forEach(function(e){e.innerHTML=primersSVG()});
+  var mf=$('[data-fig="melt"]'),mr=$("#melt-r"),mo=$("#melt-out");
+  if(mf){var upd=function(){var T=+mr.value,p=100/(1+Math.exp(-(T-50)/8));mf.innerHTML=meltSVG(T);mo.textContent=Math.round(p)+" % non appariées"+(Math.abs(p-50)<4?" · Tm":p<15?" · double brin":p>85?" · simple brin":"")};mr.addEventListener("input",upd);upd()}
+  var M=[1500,1000,800,600,500,400,300,200,100].map(function(z){return[z,.85]});
+  $$('[data-fig="gelcycles"]').forEach(function(e){e.style.maxWidth="520px";e.innerHTML=gelSVG({min:80,max:2000,aria:"Gel : bande absente à 1 et 10 cycles, faible à 20, forte à 25 et 30",lanes:[{lab:"1",bands:[[500,0]]},{lab:"10",bands:[[500,0]]},{lab:"20",bands:[[500,.35]]},{lab:"25",bands:[[500,.75]]},{lab:"30",bands:[[500,1]]},{lab:"M",bands:M}]})});
+  $$('[data-fig="gelcftr"]').forEach(function(e){e.innerHTML=gelSVG({min:40,max:60,laneW:92,aria:"Gel mucoviscidose",sizes:[[50,"50 pb"],[47,"47 pb"]],lanes:[{lab:"Père",bands:[[50],[47]]},{lab:"Mère",bands:[[50],[47]]},{lab:"Fille ●",bands:[[47]]},{lab:"Fils",bands:[[50]]}]})});
+  var CM=[1000,900,800,700,600,500,420,350,300,250,200].map(function(z){return[z,.8]});
+  $$('[data-fig="gelcrime"]').forEach(function(e){e.innerHTML=gelSVG({min:180,max:1150,laneW:78,aria:"Gel empreintes génétiques",lanes:[{lab:"Victime",bands:[[420],[300]]},{lab:"Susp. A",bands:[[900],[700]]},{lab:"Susp. B",bands:[[800],[250]]},{lab:"M",bands:CM},{lab:"Vict.*",bands:[[420],[300]]},{lab:"Agress.*",bands:[[900],[700]]}]})+'<p class="tiny">* prélèvement médico-légal</p>'});
+  var d50=$('[data-fig="d50"]');
+  if(d50){d50.innerHTML='AATGTCAATAAATAAGAAAGATATTAAAAGGAAGAAATTATATTTACCGTTTAAATTTGGT<span class="tg">TATGAACACTTAGATATTGCTAATGAGCACTACTACCGTATATAGCTTTTAAAACAAAACATGATTTATATGCGTGTATAATTTGGATATAATAAACTCTGAATTAGAAAAAATTGCTGATAATCGATGAATATATCATGAATATAATTGAAAGAGTACGTCTAAAATCTG</span>TTACTATTAAATTTTTATATGCTTATTTCAACTAATTCTGTTCAAATTAAAATTATAGAAAAGTTTGAACGAAAAAGATTT'}
+  var v=$('[data-fig="vntr"]');
+  if(v){var f5="GCTCCAGGCTTAGA",f3="CGCACTTTAACGATACGG";v.innerHTML=[[1,8],[2,7],[3,9]].map(function(x){return '<p style="margin:0 0 4px;font-size:.86rem"><b>Individu '+x[0]+'</b> : '+x[1]+' répétitions</p><div class="seqwrap" style="margin-bottom:10px">…<span class="hl-f">'+f5+'</span><mark>'+"CTT".repeat(x[1])+'</mark><span class="hl-r">'+f3+'</span>…</div>'}).join("")+'<p class="tiny">Forward en violet, avant les répétitions ; reverse en rose, après (elle s\'hybride sur le brin complémentaire).</p>'}
+  var t4=$('[data-fig="td4"]');
+  if(t4){t4.innerHTML=[1,2,3,4].map(function(n){var m=molsAfter(n);return '<div class="cell"><p style="margin:0 0 6px"><b>Après le cycle '+n+'</b> · '+m.length+' molécules'+(n>=3?" · "+m.filter(isAmp).length+" amplicons d'intérêt":"")+'</p>'+drawRows(m.map(function(x){return{k:"mol",m:x}}),"Molécules après le cycle "+n)+"</div>"}).join("")}
+  var t5=$('[data-fig="td5"]');
+  if(t5){t5.innerHTML='<div class="seqblock">'+
+  '                                      <span class="arrow-l" style="width:15ch"></span>\n'+
+  "5'- … … AAT ATC AT<span class=\"tg\">C TT</span>T GGT GTT TCC TAT … …  -3'   Sauvage\n"+
+  "    … … Asn Ile Ile Phe Gly Val Ser Tyr … …\n"+
+  '<span class="arrow-r" style="width:13ch"></span>\n\n'+
+  '                                      <span class="arrow-l" style="width:15ch"></span>\n'+
+  "5'- … … AAT ATC AT    T GGT GTT TCC TAT … …  -3'   Mutant\n"+
+  "    … … Asn Ile Ile     Gly Val Ser Tyr … …\n"+
+  '<span class="arrow-r" style="width:13ch"></span></div><p class="tiny">Flèche violette : amorce forward (en amont, vers la droite). Flèche rose : amorce reverse (en aval, vers la gauche).</p>'}
+  var t5g=$('[data-fig="td5gel"]');
+  if(t5g)t5g.innerHTML=gelSVG({min:40,max:60,laneW:100,aria:"Gel : bande sauvage plus haute, bande mutée plus basse",lanes:[{lab:"Sauvage",bands:[[50]]},{lab:"Muté",bands:[[47]]}]});
+  var t6=$('[data-fig="td6seq"]');
+  if(t6){t6.innerHTML=TD6.map(function(s,i){return '<p style="margin:10px 0 4px"><u>Individu '+(i+1)+'</u> :</p><div class="seqwrap" style="margin:0;background:var(--paper)">'+s+"</div>"}).join("")}
+  var t6g=$('[data-fig="td6gel"]');
+  if(t6g)t6g.innerHTML=gelSVG({min:60,max:80,laneW:80,aria:"Gel : individu 1 le plus bas, individu 3 le plus haut",sizes:[[68,"68 pb"],[71,"71 pb"],[74,"74 pb"]],lanes:[{lab:"1",bands:[[68]]},{lab:"2",bands:[[71]]},{lab:"3",bands:[[74]]}]});
+}
+var TD6=["ATTCGATCATGCTCCAGGCTAAGACTTCTTCTTCTTCTTCTTCGCACTTTAACGATTTAACGGCCGAT","ATTCGATCATGCTCCAGGCTAAGACTTCTTCTTCTTCTTCTTCTTCGCACTTTAACGATTTAACGGCCGAT","ATTCGATCATGCTCCAGGCTAAGACTTCTTCTTCTTCTTCTTCTTCTTCGCACTTTAACGATTTAACGGCCGAT"];
+
+/* ================= QCM ================= */
+var QCM={
+b1:[
+ {q:"Quelles bases azotées sont complémentaires dans l'ADN ?",h:"Les quatre bases de l'ADN sont A, T, G et C. L'uracile n'en fait pas partie.",o:[
+  ["A avec T, et G avec C",1,"C'est la complémentarité de la diapo 2 : A–T et G–C."],
+  ["A avec G, et T avec C",0,"Ce n'est pas la complémentarité du cours : A s'apparie avec T, et G avec C."],
+  ["A avec C, et G avec T",0,"Ce n'est pas la complémentarité du cours : A s'apparie avec T, et G avec C."],
+  ["A avec U, et G avec C",0,"L'uracile (U) figure parmi les pyrimidines (diapo 12), mais l'ADN contient de la thymine : A s'apparie avec T."]]},
+ {q:"Dans un brin d'ADN, dans quel sens va l'orientation conventionnelle ?",h:"Le phosphate et le groupement OH ne sont pas sur le même carbone. Regarde la diapo 2.",o:[
+  ["De l'extrémité 5'P vers l'extrémité 3'OH",1,"Diapo 2 : orientation 5'P → 3'OH."],
+  ["De l'extrémité 3'P vers l'extrémité 5'OH",0,"Les groupements sont inversés : le phosphate est en 5', le OH en 3'."],
+  ["De l'extrémité 5'OH vers l'extrémité 3'P",0,"Les groupements sont inversés : le phosphate est en 5', le OH en 3'."],
+  ["De l'extrémité 3'OH vers l'extrémité 5'P",0,"C'est le sens inverse de la convention : on écrit un brin de 5' vers 3'."]]},
+ {q:"Comment sont orientés les deux brins d'une double hélice l'un par rapport à l'autre ?",h:"Regarde les deux flèches bleues en bas de la diapo 2.",o:[
+  ["En sens opposés : 5'→3' face à 3'→5'",1,"Oui : le brin du haut va de 5' à 3', celui du bas de 3' à 5'."],
+  ["Dans le même sens : 5'→3' face à 5'→3'",0,"Les deux flèches de la diapo 2 pointent dans des sens opposés."],
+  ["Dans le même sens : 3'→5' face à 3'→5'",0,"Les deux flèches de la diapo 2 pointent dans des sens opposés."],
+  ["Au hasard, selon la séquence des bases",0,"L'orientation ne dépend pas de la séquence : les brins sont toujours en sens opposés."]]},
+ {q:"Dans la réplication in vivo, quelle association acteur → rôle est correcte ?",h:"Diapo 3 : 1 – hélicase, 2 – primers, 3 – ADN polymérase. Chaque acteur a son étape.",o:[
+  ["Hélicase → séparation des deux brins",1,"Diapo 3 : hélicase = séparation des brins, ou dénaturation."],
+  ["Hélicase → élongation des nouveaux brins",0,"L'élongation est le rôle de l'ADN polymérase."],
+  ["Polymérase → séparation des deux brins",0,"La polymérase réplique (élongation). La séparation est faite par l'hélicase."],
+  ["Primers → élongation des nouveaux brins",0,"Les primers amorcent la réplication (hybridation), ils ne l'allongent pas."]]},
+ {q:"D'après le cours, quel besoin commun a conduit à la PCR ?",h:"Diapo 4 : le grand encadré jaune en bas.",o:[
+  ["Disposer d'ADN en grandes quantités",1,"Police, santé, recherche, industrie : tous ont besoin d'ADN en grandes quantités."],
+  ["Disposer d'ARN en grandes quantités",0,"La PCR amplifie de l'ADN (les dNTP sont des désoxyribonucléotides)."],
+  ["Séparer les deux brins de tout l'ADN",0,"Séparer les brins n'est qu'une étape (dénaturation), pas le but."],
+  ["Supprimer les liaisons entre les bases",0,"Ce n'est pas l'objectif présenté : le but est d'avoir beaucoup d'ADN."]]},
+ {q:"Quelle étape n'est effectuée qu'une seule fois, tout au début de la PCR ?",h:"Diapo 5 : repère les étapes ①, ② et ③, en dehors du cycle.",o:[
+  ["La dénaturation initiale",1,"① Dénaturation initiale : une seule fois, avant les cycles."],
+  ["La dénaturation du cycle",0,"La dénaturation ❶ est répétée à chaque cycle, 30 à 35 fois."],
+  ["L'hybridation des amorces",0,"L'hybridation ❷ est répétée à chaque cycle."],
+  ["L'élongation finale",0,"Elle n'est faite qu'une fois aussi, mais à la fin (③), pas au début."]]},
+ {q:"Combien de fois répète-t-on le cycle dénaturation – hybridation – élongation ?",h:"Diapo 5, à gauche de l'accolade des trois étapes.",o:[
+  ["30 à 35 fois",1,"Diapo 5 : 1 cycle × 30-35."],
+  ["3 à 5 fois",0,"Beaucoup trop peu : on n'aurait que 8 à 32 molécules (bloc 4)."],
+  ["10 à 15 fois",0,"Sur le gel de la diapo 47, après 10 cycles on ne voit encore aucune bande."],
+  ["100 à 150 fois",0,"Le cours indique une saturation après 30–35 cycles : aller au-delà ne sert à rien."]]},
+ {q:"Compléter : « Un cycle PCR reproduit in vitro l'équivalent… »",h:"C'est la phrase encadrée en violet de la diapo 5.",o:[
+  ["d'une réplication in vivo, pour une séquence donnée",1,"C'est la phrase exacte du cours."],
+  ["d'une réplication in vivo, pour le génome entier",0,"Non : seule la séquence encadrée par les amorces est copiée."],
+  ["d'une dénaturation in vivo, pour une séquence donnée",0,"La dénaturation n'est qu'une des trois étapes du cycle."],
+  ["d'une hybridation in vivo, pour le génome entier",0,"L'hybridation n'est qu'une étape, et la PCR vise une séquence donnée."]]}
+],
+b2:[
+ {q:"Que sont les amorces (primers) ?",h:"« Oligo- » signifie peu. Et pour s'hybrider sur un brin, il faut être…",o:[
+  ["Des oligonucléotides d'ADN simple brin",1,"Diapo 9 : primers = oligonucléotides (courtes séquences d'ADN) simple brin."],
+  ["Des oligonucléotides d'ADN double brin",0,"Une amorce est simple brin : elle doit pouvoir s'apparier au brin matrice."],
+  ["De longs fragments d'ADN double brin",0,"Elles sont courtes (18–30 nt) et simple brin."],
+  ["Des enzymes qui séparent les deux brins",0,"Ça, c'est l'hélicase in vivo ; en PCR c'est la température."]]},
+ {q:"Quelle est la longueur d'une amorce d'après le cours ?",h:"Diapo 10, deuxième point.",o:[
+  ["Entre 18 et 30 nucléotides",1,"Diapo 10 : longueur entre 18 et 30 nucléotides."],
+  ["Entre 3 et 8 nucléotides",0,"Hors de la fourchette du cours (18–30 nt)."],
+  ["Entre 50 et 80 nucléotides",0,"Hors de la fourchette du cours (18–30 nt)."],
+  ["Entre 150 et 300 nucléotides",0,"Hors de la fourchette du cours (18–30 nt)."]]},
+ {q:"Dans quel sens écrit-on une amorce ?",h:"C'est la même convention que pour écrire n'importe quel brin.",o:[
+  ["Toujours de 5' vers 3'",1,"Diapo 10 : amorces toujours écrites 5'-3'. D'où la réponse au TD ex 3A."],
+  ["Toujours de 3' vers 5'",0,"C'est le contraire de la convention."],
+  ["Dans le sens du brin du bas",0,"Toutes les amorces s'écrivent 5'→3', quelle que soit leur position."],
+  ["Au choix de l'expérimentateur",0,"Non, c'est une convention fixe : 5'→3'."]]},
+ {q:"Les deux amorces d'un couple doivent être…",h:"Diapo 10, troisième point.",o:[
+  ["non complémentaires entre elles",1,"Diapo 10 : couple d'amorces non complémentaires entre elles."],
+  ["complémentaires entre elles",0,"Elles s'hybrideraient l'une sur l'autre au lieu de se fixer sur la matrice."],
+  ["identiques en séquence",0,"Il faut une amorce de chaque côté, avec deux séquences différentes."],
+  ["placées du même côté",0,"Elles sont de part et d'autre de la région (diapo 9)."]]},
+ {q:"De quelle bactérie provient la Taq polymérase ?",h:"Le nom « Taq » est formé à partir du nom de la bactérie.",o:[
+  ["Thermus aquaticus",1,"Taq = Thermus aquaticus."],
+  ["Pyrococcus furiosus",0,"C'est l'origine de la Phusion."],
+  ["Thermus filiformis",0,"C'est l'origine de la Tfi polymérase."],
+  ["Thermus thermophilus",0,"C'est l'origine de la Tth polymérase."]]},
+ {q:"Quelle affirmation sur la Taq polymérase est FAUSSE ?",h:"Diapo 11 : la fiche de la Taq a trois points, dont un négatif.",o:[
+  ["Elle a une activité exonucléase 3'→5'",1,"C'est faux : la Taq n'a PAS d'activité exonucléase 3'-5' (proofreading)."],
+  ["Elle résiste à une température de 95 °C",0,"C'est vrai (diapo 11) : ce n'est donc pas la réponse."],
+  ["Elle a une activité polymérase 5'→3'",0,"C'est vrai (diapo 11) : ce n'est donc pas la réponse."],
+  ["Elle vient d'une bactérie thermophile",0,"C'est vrai : on l'a cherchée chez les thermophiles extrêmes."]]},
+ {q:"Pourquoi utilise-t-on une ADN polymérase thermostable ?",h:"Quelle température atteint-on à chaque dénaturation ?",o:[
+  ["Elle doit résister aux fortes températures",1,"Chaque cycle remonte à 95 °C : l'enzyme doit résister (diapo 11)."],
+  ["Elle doit séparer elle-même les deux brins",0,"C'est la température qui sépare les brins."],
+  ["Elle doit fabriquer elle-même les amorces",0,"Les amorces sont ajoutées dans le cocktail."],
+  ["Elle doit agir à température ambiante",0,"Au contraire : la Taq travaille à 72 °C et résiste à 95 °C."]]},
+ {q:"Quel est le rôle des dNTP ?",h:"dNTP = désoxyribonucléotides : ce sont les unités de l'ADN.",o:[
+  ["Ce sont les unités que la polymérase assemble",1,"Diapo 13 : éléments utilisés par la polymérase pour synthétiser les brins."],
+  ["Ce sont les amorces que la polymérase allonge",0,"Les amorces sont des oligonucléotides, pas des dNTP."],
+  ["Ce sont des ions qui stabilisent le pH",0,"C'est le rôle du tampon."],
+  ["Ce sont des enzymes qui séparent les brins",0,"En PCR, c'est la température (dénaturation)."]]},
+ {q:"Quand la polymérase ajoute un dNTP au brin en synthèse, que libère-t-elle ?",h:"Un dNTP a trois phosphates ; dans le brin, le nucléotide n'en garde qu'un.",o:[
+  ["Un pyrophosphate (PPi)",1,"Diapo 13 : « PPi release »."],
+  ["Une base azotée",0,"La base reste dans le brin : c'est elle qui s'apparie à la matrice."],
+  ["Un désoxyribose",0,"Le sucre fait partie du nucléotide ajouté, il reste dans le brin."],
+  ["Un ion Mg²⁺",0,"Mg²⁺ est un cofacteur apporté par le tampon, pas un produit de la réaction."]]},
+ {q:"Quels cofacteurs trouve-t-on dans le tampon de PCR ?",h:"Regarde les exposants : ²⁺ ou ⁺ ?",o:[
+  ["Mg²⁺ divalent ; K⁺ et NH₄⁺ monovalents",1,"Diapo 14 : divalents Mg²⁺ ; monovalents K⁺, NH₄⁺."],
+  ["K⁺ divalent ; Mg²⁺ et NH₄⁺ monovalents",0,"K⁺ porte une seule charge : il est monovalent. Mg²⁺ en porte deux."],
+  ["NH₄⁺ divalent ; Mg²⁺ et K⁺ monovalents",0,"NH₄⁺ porte une seule charge : il est monovalent. Mg²⁺ en porte deux."],
+  ["Mg²⁺ et K⁺ divalents ; NH₄⁺ monovalent",0,"K⁺ porte une seule charge : il est monovalent."]]},
+ {q:"Quel pH le tampon doit-il maintenir pour la Taq ?",h:"Diapo 14, premier point.",o:[
+  ["Entre 7,5 et 9,5",1,"Diapo 14 : Taq polymerase, pH entre 7,5 et 9,5."],
+  ["Entre 2,5 et 4,5",0,"Ce n'est pas la valeur du cours (7,5–9,5)."],
+  ["Entre 5,0 et 6,0",0,"Ce n'est pas la valeur du cours (7,5–9,5)."],
+  ["Entre 10,5 et 12,5",0,"Ce n'est pas la valeur du cours (7,5–9,5)."]]},
+ {q:"Que se passe-t-il quand on chauffe fortement de l'ADN double brin ?",h:"Diapo 8 : « Augmentation de la température → … »",o:[
+  ["Les liaisons H se rompent, les brins se séparent",1,"Diapo 8 : rupture des liaisons hydrogène, l'ADN passe en simple brin."],
+  ["Les liaisons H se renforcent, les brins s'unissent",0,"C'est l'inverse : la chaleur rompt les liaisons hydrogène."],
+  ["L'armature phosphate-désoxyribose se casse",0,"Ce sont les liaisons entre les bases qui cèdent, pas l'armature du brin."],
+  ["Les bases A et T se transforment en G et C",0,"Les bases ne changent pas : seul l'appariement disparaît."]]}
+],
+b3:[
+ {q:"Quelles sont la température et la durée de la dénaturation, à chaque cycle ?",h:"Le post-it jaune de la diapo 22.",o:[
+  ["95 °C pendant 30 s",1,"Diapo 22 : dénaturation 95 °C, 30 s."],
+  ["72 °C pendant 30 s",0,"72 °C, c'est l'élongation avec la Taq."],
+  ["95 °C pendant 5 min",0,"95 °C 2–5 min, c'est la dénaturation initiale (①), pas celle de chaque cycle."],
+  ["Ta pendant 30 s",0,"Ta, c'est l'hybridation des amorces."]]},
+ {q:"À quoi correspond le Tm (melting temperature) ?",h:"Diapo 24 : suis la ligne jaune depuis l'axe vertical.",o:[
+  ["Température où 50 % des bases sont non appariées",1,"Diapo 24 : Tm lu à 50 % de bases non appariées."],
+  ["Température où 100 % des bases sont non appariées",0,"À 100 %, l'ADN est entièrement simple brin : ce n'est pas le Tm."],
+  ["Température où 0 % des bases sont non appariées",0,"À 0 %, l'ADN est entièrement double brin : ce n'est pas le Tm."],
+  ["Température optimale de travail de la Taq",0,"Ça, c'est 72 °C, la température d'élongation."]]},
+ {q:"Quel est le Tm de l'amorce 5'-ATGCGTACCTAGGATCAT-3' ?",h:"Compte séparément A+T et G+C (le total fait 18).",o:[
+  ["52 °C",1,"A+T = 10, G+C = 8 → 2 × 10 + 4 × 8 = 20 + 32 = 52 °C."],
+  ["56 °C",0,"Coefficients inversés : 4 × 10 + 2 × 8 = 56. C'est 2(A+T) + 4(G+C)."],
+  ["36 °C",0,"C'est 2 × 18 : toutes les bases comptées comme des A ou T."],
+  ["72 °C",0,"C'est 4 × 18 : toutes les bases comptées comme des G ou C."]]},
+ {q:"Quelles règles doivent respecter les Tm d'un couple d'amorces ?",h:"Diapo 25, le panneau « Important pour le design des amorces ».",o:[
+  ["Entre 50 et 60 °C, avec ΔTm < 5 °C",1,"Diapo 25 : chaque Tm entre 50 et 60 °C, et ΔTm < 5 °C."],
+  ["Entre 70 et 80 °C, avec ΔTm < 5 °C",0,"La fourchette du cours est 50–60 °C."],
+  ["Entre 50 et 60 °C, avec ΔTm > 10 °C",0,"Les deux Tm doivent être proches : ΔTm < 5 °C."],
+  ["Entre 30 et 40 °C, avec ΔTm < 5 °C",0,"La fourchette du cours est 50–60 °C."]]},
+ {q:"Deux amorces ont un Tm de 58 °C et 51 °C. Le couple est-il compatible ?",h:"Il y a DEUX règles à vérifier, pas une seule.",o:[
+  ["Non : ΔTm = 7 °C, ce qui dépasse 5 °C",1,"Les deux Tm sont bien entre 50 et 60 °C, mais ΔTm = 7 °C ≥ 5 °C."],
+  ["Oui : les deux Tm sont entre 50 et 60 °C",0,"Il faut aussi ΔTm < 5 °C : ici 58 − 51 = 7 °C."],
+  ["Non : l'amorce à 51 °C est sous 50 °C",0,"51 °C est bien au-dessus de 50 °C. Le problème est ΔTm."],
+  ["Oui : ΔTm = 7 °C, ce qui reste sous 10 °C",0,"La limite du cours est 5 °C, pas 10 °C."]]},
+ {q:"À quelle température se fait l'hybridation des amorces ?",h:"Diapo 23 : « Ta : annealing Temperature, liée aux… »",o:[
+  ["Ta, liée au Tm des amorces utilisées",1,"Diapo 45 : Ta ≈ Tm des amorces (dans les corrections, le Tm le plus bas)."],
+  ["95 °C, quelle que soit l'amorce utilisée",0,"95 °C, c'est la dénaturation : les amorces ne pourraient pas s'hybrider."],
+  ["72 °C, température optimale de la Taq",0,"72 °C, c'est l'élongation."],
+  ["60 °C toujours, limite haute du Tm",0,"Ta dépend des amorces : elle n'est pas fixe."]]},
+ {q:"De quoi dépend la température de l'élongation ?",h:"Diapo 27, première ligne sous « Élongation ».",o:[
+  ["De la polymérase utilisée",1,"Diapo 27 : température liée à la polymérase utilisée (72 °C pour la Taq)."],
+  ["De la taille du fragment",0,"La taille joue sur la durée, pas sur la température."],
+  ["Du Tm des amorces",0,"Le Tm fixe la température d'hybridation, pas celle d'élongation."],
+  ["Du nombre de cycles",0,"Le nombre de cycles ne change pas la température d'élongation."]]},
+ {q:"Avec la Taq (1000 pb/min), combien de temps d'élongation pour 250 pb ?",h:"1000 pb → 60 s. Produit en croix.",o:[
+  ["15 s",1,"60 × 250 / 1000 = 15 s."],
+  ["25 s",0,"Ça revient à 250 / 10 : le produit en croix n'est pas posé."],
+  ["4 s",0,"Ça revient à 1000 / 250 : produit en croix à l'envers."],
+  ["150 s",0,"Ça revient à 60 × 250 / 100 : erreur d'un facteur 10."]]},
+ {q:"Quelles sont la température et la durée de l'élongation finale ?",h:"Diapo 44, le post-it en bas à gauche.",o:[
+  ["72 °C pendant 5 à 10 min",1,"Diapos 44–45 : élongation finale 72 °C (Taq), 5 à 10 min."],
+  ["95 °C pendant 2 à 5 min",0,"C'est la dénaturation initiale."],
+  ["72 °C pendant 30 s",0,"C'est une durée d'élongation de cycle, pas l'élongation finale."],
+  ["Ta pendant 5 à 10 min",0,"Ta concerne l'hybridation."]]},
+ {q:"Le brin du haut se termine par 5'-…CTAGGCATTC-3'. Quelle amorce droite (reverse) choisir ?",h:"Complémentaire d'abord, puis relis-le à l'envers pour l'écrire 5'→3'.",o:[
+  ["5'-GAATGCCTAG-3'",1,"Complémentaire (3'-GATCCGTAAG-5') réécrit dans le sens 5'→3'."],
+  ["5'-GATCCGTAAG-3'",0,"Complémentaire non inversé : c'est en réalité 3'→5'."],
+  ["5'-CTTACGGATC-3'",0,"Séquence du haut lue à l'envers, sans complémentarité."],
+  ["5'-CTAGGCATTC-3'",0,"Recopie du brin du haut : elle partirait vers la droite, hors de la région."]]},
+ {q:"Pour baisser le Tm d'une amorce sans changer la région amplifiée, on…",h:"Le nouveau brin commence par l'amorce. Quelle extrémité de l'amorce marque le début de la région ?",o:[
+  ["retire des nucléotides à son extrémité 3'",1,"L'extrémité 5' reste en place, donc la région amplifiée ne change pas (correction TD 3B)."],
+  ["retire des nucléotides à son extrémité 5'",0,"L'extrémité 5' fixe la limite de la région : la déplacer change la région."],
+  ["remplace des G et C par des A et T",0,"L'amorce ne serait plus complémentaire de la matrice."],
+  ["ajoute des nucléotides à son extrémité 5'",0,"Ajouter des nucléotides fait monter le Tm et déplace la limite de la région."]]}
+],
+b4:[
+ {q:"En partant d'une seule molécule, combien de molécules d'ADN après le cycle 1 ?",h:"Chaque brin sert de modèle à un nouveau brin.",o:[
+  ["2",1,"Chaque brin original est recopié : 2 molécules (diapo 28)."],
+  ["1",0,"La molécule a été recopiée : il y en a deux."],
+  ["3",0,"Le nombre double à chaque cycle : 1 → 2."],
+  ["4",0,"4, c'est après le cycle 2."]]},
+ {q:"En partant d'une seule molécule, combien de molécules après le cycle 3 ?",h:"1 → 2 → 4 → ?",o:[
+  ["8",1,"2³ = 8."],
+  ["6",0,"Le nombre double : il ne s'ajoute pas 2 à chaque cycle."],
+  ["9",0,"C'est 3², pas 2³."],
+  ["16",0,"16, c'est après le cycle 4."]]},
+ {q:"En partant d'une seule molécule, combien de molécules après le cycle 4 ?",h:"2 × 2 × 2 × 2.",o:[
+  ["16",1,"2⁴ = 16 (diapo 46)."],
+  ["8",0,"8, c'est après le cycle 3."],
+  ["12",0,"Le nombre double, il n'augmente pas de 4 en 4."],
+  ["32",0,"32, ce serait après le cycle 5."]]},
+ {q:"À quel cycle apparaissent les premiers amplicons d'intérêt ?",h:"Diapo 38 : « Apparition des premiers amplicons d'intérêt ! »",o:[
+  ["Au cycle 3",1,"Diapo 38 : fin du cycle 3."],
+  ["Au cycle 1",0,"Au cycle 1, les nouveaux brins sont longs (ils vont au bout de la matrice)."],
+  ["Au cycle 2",0,"Au cycle 2, les premiers brins courts sont appariés à des brins longs."],
+  ["Au cycle 4",0,"Il y en a déjà au cycle 3."]]},
+ {q:"Combien y a-t-il d'amplicons d'intérêt à la fin du cycle 4 ?",h:"Compte les molécules surlignées en jaune à la colonne « Cycle 4 » de la diapo 46.",o:[
+  ["8",1,"8 molécules sur 16 sont surlignées (diapo 46)."],
+  ["2",0,"2, c'est à la fin du cycle 3."],
+  ["4",0,"Recompte les molécules surlignées en jaune au cycle 4."],
+  ["16",0,"16, c'est le total de molécules, pas les seuls amplicons d'intérêt."]]},
+ {q:"À la fin du cycle 1, de quoi est formée chaque molécule ?",h:"Où s'arrête la polymérase quand elle recopie un brin original ?",o:[
+  ["D'un brin original et d'un brin long",1,"Diapo 28 : le nouveau brin part de l'amorce et va jusqu'au bout du brin original."],
+  ["De deux brins courts, à la taille exacte",0,"Ils n'apparaissent qu'au cycle 3."],
+  ["De deux brins originaux réassociés",0,"Chaque brin original est apparié à un nouveau brin."],
+  ["D'un brin original et d'un brin court",0,"Sur un brin original, la polymérase va jusqu'au bout : le brin est long."]]},
+ {q:"Combien de copies obtient-on après 30 cycles, d'après la diapo 46 ?",h:"Le nombre double à chaque cycle.",o:[
+  ["2³⁰ ≈ 1,07·10⁹ copies",1,"Diapo 46 : 2³⁰ = 1,07·10⁹ copies."],
+  ["30 × 2 = 60 copies",0,"Le nombre double à chaque cycle, il ne s'ajoute pas."],
+  ["30² = 900 copies",0,"C'est 2 puissance 30, pas 30 au carré."],
+  ["2³⁰ ≈ 1,07·10⁶ copies",0,"Erreur de puissance : 2³⁰ ≈ un milliard (10⁹)."]]},
+ {q:"Par quoi commence toujours un brin néosynthétisé ?",h:"La polymérase allonge l'amorce de 5' vers 3'.",o:[
+  ["Par une amorce, placée à son extrémité 5'",1,"L'amorce est allongée par son extrémité 3' : elle reste au début (5') du nouveau brin."],
+  ["Par une amorce, placée à son extrémité 3'",0,"C'est l'inverse : l'extrémité 3' est celle qui s'allonge."],
+  ["Par un brin original, recopié en entier",0,"Le brin original sert de modèle, il n'est pas intégré au nouveau brin."],
+  ["Par un dNTP isolé, choisi au hasard",0,"La polymérase a besoin d'une amorce pour démarrer."]]},
+ {q:"Au cycle 2, quand la polymérase recopie un brin long, où s'arrête-t-elle ?",h:"Un brin long commence par une amorce…",o:[
+  ["Au bout de ce brin, au niveau de l'autre amorce",1,"Le brin long commence par une amorce : le nouveau brin s'arrête là, d'où un brin court."],
+  ["Bien au-delà, au bout de la matrice d'origine",0,"Elle ne peut pas recopier au-delà du brin qu'elle lit."],
+  ["Au milieu de la région cible, faute de dNTP",0,"Rien dans le cours n'indique un arrêt au milieu de la cible."],
+  ["Nulle part : elle refait le tour du brin",0,"Elle s'arrête au bout du brin qu'elle recopie."]]}
+],
+b5:[
+ {q:"Dans un gel d'agarose, l'ADN migre en fonction…",h:"Diapo 47, premier point.",o:[
+  ["de sa taille",1,"Diapo 47 : migration en fonction de la taille de l'ADN."],
+  ["de sa séquence",0,"Deux fragments de même taille mais de séquences différentes migrent pareil."],
+  ["de son Tm",0,"Le Tm concerne l'hybridation, pas la migration."],
+  ["de son orientation",0,"L'orientation 5'→3' ne joue pas sur la migration."]]},
+ {q:"Grâce à quoi l'ADN migre-t-il dans le gel ?",h:"Diapo 47, entre parenthèses.",o:[
+  ["Grâce à sa charge négative",1,"Diapo 47 : grâce à sa charge négative."],
+  ["Grâce à sa charge positive",0,"L'ADN est chargé négativement."],
+  ["Grâce à la chaleur du gel",0,"C'est un phénomène électrique, pas thermique."],
+  ["Grâce à l'action de la Taq",0,"La Taq intervient dans la PCR, pas dans le gel."]]},
+ {q:"Vers quel pôle l'ADN se déplace-t-il ?",h:"Des charges de signes opposés s'attirent.",o:[
+  ["Vers le pôle +",1,"Chargé négativement, il va vers le + (en bas sur la diapo 47)."],
+  ["Vers le pôle −",0,"L'ADN, chargé −, s'éloigne du pôle − où sont les puits."],
+  ["Vers les puits de dépôt",0,"Il part des puits, il ne revient pas vers eux."],
+  ["Dans les deux sens à la fois",0,"Tous les fragments vont dans le même sens, vers le +."]]},
+ {q:"Deux fragments font 50 pb et 47 pb. Lequel migre le plus loin ?",h:"Regarde le gel de la diapo 57 : où est la bande de 47 pb ?",o:[
+  ["Celui de 47 pb",1,"Le plus petit migre le plus loin : 47 pb est sous 50 pb (diapo 57)."],
+  ["Celui de 50 pb",0,"C'est le plus grand : il migre moins loin."],
+  ["Ils migrent exactement pareil",0,"3 pb de différence suffisent à séparer les bandes (diapo 57)."],
+  ["Celui de 47 pb ne migre pas",0,"Tous les fragments migrent ; les petits vont plus loin."]]},
+ {q:"Pourquoi y a-t-il saturation après 30–35 cycles ?",h:"Diapo 47, dernier point : deux raisons.",o:[
+  ["dNTP/amorces épuisés, polymérase moins active",1,"Diapo 47 : épuisement dNTP et/ou amorces ; perte d'activité de la polymérase."],
+  ["dNTP/amorces en excès, polymérase plus active",0,"C'est l'inverse : ils s'épuisent et la polymérase s'use."],
+  ["Tampon évaporé, matrice entièrement détruite",0,"Ce ne sont pas les causes données par le cours."],
+  ["Matrice épuisée, polymérase en large excès",0,"Ce ne sont pas les causes données par le cours."]]},
+ {q:"Sur le gel de la diapo 47, à partir de combien de cycles voit-on la bande ?",h:"Regarde les pistes 1, 10, 20, 25, 30.",o:[
+  ["20 cycles",1,"Bande faible à 20 cycles, plus forte à 25 et 30."],
+  ["1 cycle",0,"Après 1 cycle, la quantité d'ADN est bien trop faible."],
+  ["10 cycles",0,"À 10 cycles, la piste est encore vide."],
+  ["30 cycles seulement",0,"On la voit déjà à 20 et 25 cycles."]]},
+ {q:"Que contient la piste M d'un gel ?",h:"Légende sous le gel de la diapo 47.",o:[
+  ["Un marqueur de poids moléculaires",1,"M = marqueur de poids moléculaires."],
+  ["La matrice d'ADN non amplifiée",0,"M n'est pas la matrice : c'est un marqueur de tailles."],
+  ["Le mélange des deux amorces",0,"M n'est pas un mélange d'amorces : c'est un marqueur de tailles."],
+  ["Le mutant de la séquence cible",0,"M n'est pas un mutant : c'est un marqueur de tailles."]]}
+],
+b6:[
+ {q:"Quelle est la mutation retrouvée dans ~90 % des cas de mucoviscidose ?",h:"Diapo 56, à droite des deux encadrés.",o:[
+  ["Délétion de 3 pb, perte de Phe 508",1,"Diapo 56 : délétion de 3 pb → délétion Phe 508."],
+  ["Insertion de 3 pb, ajout d'une Phe",0,"C'est une délétion : il manque des nucléotides."],
+  ["Délétion de 50 pb, perte du gène",0,"50 pb est la taille du produit PCR normal, pas celle de la délétion."],
+  ["Délétion de 3 pb, perte de Gly 509",0,"Gly 509 est conservée ; c'est Phe 508 qui disparaît."]]},
+ {q:"Avec les amorces de la diapo 56, quelles tailles de produits obtient-on ?",h:"La délétion enlève 3 pb au fragment.",o:[
+  ["50 pb (normal) et 47 pb (muté)",1,"Diapo 56 : allèle normal 50 pb, allèle muté 47 pb."],
+  ["47 pb (normal) et 50 pb (muté)",0,"Inversé : l'allèle muté a perdu 3 pb, il est plus court."],
+  ["50 pb (normal) et 53 pb (muté)",0,"Une délétion raccourcit le fragment."],
+  ["50 pb pour chacun des deux allèles",0,"La délétion change la taille : 3 pb de moins."]]},
+ {q:"Une personne présente deux bandes, à 50 et 47 pb. Qu'en conclure ?",h:"Chaque bande correspond à un allèle.",o:[
+  ["Elle a un allèle normal et un allèle muté",1,"Comme les parents de la diapo 57 : non atteints, une bande de chaque."],
+  ["Elle a deux allèles normaux",0,"Deux allèles normaux ne donnent qu'une bande, à 50 pb."],
+  ["Elle a deux allèles mutés",0,"Deux allèles mutés ne donnent qu'une bande, à 47 pb."],
+  ["Son échantillon est contaminé",0,"Les deux tailles correspondent exactement aux deux allèles."]]},
+ {q:"D'après le cours, comment se transmet la mucoviscidose ?",h:"Remarque en haut de la diapo 57.",o:[
+  ["Maladie autosomique récessive",1,"Diapo 57 : maladie autosomique récessive."],
+  ["Maladie autosomique dominante",0,"Le cours indique récessive : les parents porteurs ne sont pas atteints."],
+  ["Maladie due à un parasite",0,"C'est une maladie génétique (gène CFTR)."],
+  ["Maladie due à un virus",0,"C'est une maladie génétique (gène CFTR)."]]},
+ {q:"Qu'est-ce qu'un microsatellite ?",h:"Diapo 58, encadré bleu clair.",o:[
+  ["Une région faite de répétitions d'un motif",1,"Diapo 58 : régions constituées de répétitions de motifs, ex. (AAT)₁₀."],
+  ["Une région codante propre à chaque individu",0,"Les microsatellites sont dans l'ADN non codant, et leur localisation est conservée."],
+  ["Un petit ADN présent chez les bactéries",0,"Ce n'est pas la définition du cours."],
+  ["Une amorce utilisée en criminalistique",0,"On utilise des amorces pour amplifier les microsatellites, mais ce n'en sont pas."]]},
+ {q:"Pourquoi le polymorphisme des microsatellites sert-il d'empreinte génétique ?",h:"Diapo 58, encadré vert.",o:[
+  ["Nombre de répétitions variable, position conservée",1,"Diapo 58 : nombre variable entre individus, localisation conservée."],
+  ["Position variable, nombre de répétitions constant",0,"C'est l'inverse."],
+  ["Nombre de répétitions et position constants",0,"Il n'y aurait alors aucune différence entre individus."],
+  ["Séquence codante différente chez chacun",0,"Les microsatellites ne sont pas des séquences codantes."]]},
+ {q:"Combien de loci analyse-t-on simultanément en France pour identifier une personne ?",h:"Diapo 58, dernier encadré.",o:[
+  ["13 loci",1,"Diapo 58 : 13 loci simultanés, 13 couples d'amorces."],
+  ["3 loci",0,"Ce n'est pas le nombre du cours (13)."],
+  ["31 loci",0,"Ce n'est pas le nombre du cours (13)."],
+  ["130 loci",0,"Ce n'est pas le nombre du cours (13)."]]},
+ {q:"Quelle part de l'ADN humain est codante ?",h:"Diapo 58, deuxième point.",o:[
+  ["1 à 2 %",1,"Diapo 58 : 1 à 2 % codant, plus de 98 % non codant."],
+  ["20 à 25 %",0,"Ce n'est pas la valeur du cours (1–2 %)."],
+  ["Environ 50 %",0,"Ce n'est pas la valeur du cours (1–2 %)."],
+  ["Plus de 98 %",0,"C'est la part NON codante."]]},
+ {q:"Qu'est-ce qu'une PCR multiplex ?",h:"Diapo 55, encadré du bas.",o:[
+  ["Plusieurs couples d'amorces, plusieurs agents testés",1,"Diapo 55 : tester plusieurs agents simultanément avec différents couples d'amorces."],
+  ["Un seul couple d'amorces, plusieurs échantillons",0,"Multiplex = plusieurs couples d'amorces dans la même PCR."],
+  ["Plusieurs polymérases pour aller plus vite",0,"Ce n'est pas la définition du cours."],
+  ["Plusieurs gels pour vérifier un même résultat",0,"Ce n'est pas la définition du cours."]]},
+ {q:"Deux individus ont 7 et 9 répétitions CTT. Avec les mêmes amorces, quelle bande migre le plus loin ?",h:"Plus de répétitions = fragment plus long.",o:[
+  ["Celle de l'individu à 7 répétitions",1,"Moins de répétitions → fragment plus court → migre plus loin."],
+  ["Celle de l'individu à 9 répétitions",0,"Avec 9 répétitions, le fragment est plus long : il migre moins loin."],
+  ["Les deux au même niveau",0,"6 pb de différence : les bandes sont séparées."],
+  ["Aucune, un microsatellite ne migre pas",0,"Tout fragment d'ADN migre dans le gel."]]}
+]};
+var BLOCKS=[
+ {id:"b1",v:"bloc1",t:"ADN, réplication et principe de la PCR",d:"diapos 2–5"},
+ {id:"b2",v:"bloc2",t:"Le cocktail PCR",d:"diapos 6–20"},
+ {id:"b3",v:"bloc3",t:"Programmer une PCR : étapes, Tm, élongation",d:"diapos 21–27, 45, 48–53"},
+ {id:"b4",v:"bloc4",t:"Les cycles et l'amplification exponentielle",d:"diapos 28–46"},
+ {id:"b5",v:"bloc5",t:"Visualiser l'ADN : l'électrophorèse",d:"diapo 47"},
+ {id:"b6",v:"bloc6",t:"Les applications de la PCR",d:"diapos 54–61"}
+];
+function qcmNew(b){
+  var qs=QCM[b],n=qs.length,pos=[];
+  while(pos.length<n)pos=pos.concat(shuffle([0,1,2,3]));
+  pos=pos.slice(0,n);
+  var perm=qs.map(function(q,i){var ok=q.o.findIndex(function(o){return o[1]});var wrong=shuffle(q.o.map(function(_,k){return k}).filter(function(k){return k!==ok}));wrong.splice(pos[i],0,ok);return wrong});
+  return {perm:perm,cur:0,ans:{},hint:{},n:n};
+}
+function qcmState(b){var s=store.get("qcm:"+b,null);if(!s||s.n!==QCM[b].length||!s.perm)s=qcmNew(b);return s}
+function qcmScore(b,s){s=s||qcmState(b);var sc=0,a=0,g=0;Object.keys(s.ans).forEach(function(k){a++;var q=QCM[b][k],ch=s.perm[k][s.ans[k]];if(q.o[ch][1]){sc+=1;g++}else sc-=.5});return{score:sc,answered:a,good:g,n:QCM[b].length}}
+var LET="ABCD";
+function qcmRender(el){
+  var b=el.dataset.block,s=qcmState(b),qs=QCM[b],n=qs.length,r=qcmScore(b,s);
+  var dots='<div class="dots" aria-hidden="true">'+qs.map(function(q,i){var c="";if(s.ans[i]!=null)c=q.o[s.perm[i][s.ans[i]]][1]?"g":"b";if(i===s.cur&&s.cur<n)c+=" cur";return '<i class="'+c+'"></i>'}).join("")+"</div>";
+  var top='<div class="qcm-top"><span class="t">QCM · Bloc '+b.slice(1)+'</span>'+dots+'<span class="sc">Score : '+fr(r.score)+" / "+n+"</span></div>";
+  if(s.cur>=n){
+    el.innerHTML=top+'<div class="qcm-end"><p class="eyebrow">Résultat</p><p class="score">'+fr(r.score)+' <span class="muted" style="font-size:.45em">/ '+n+'</span></p><p>'+r.good+" bonne"+(r.good>1?"s":"")+" réponse"+(r.good>1?"s":"")+" sur "+n+". "+(r.good===n?"Parfait, bloc maîtrisé 🎯":r.good>=n*.75?"Très bien. Relis les justifications des questions ratées.":"Relis le bloc, surtout les parties des questions ratées, puis recommence.")+'</p><div class="actions"><button class="btn btn-accent" type="button" data-q="restart">Recommencer ce QCM (options mélangées)</button><button class="btn btn-ghost" type="button" data-q="review">Revoir mes réponses</button></div><div class="qrev"></div></div>';
+    return;
+  }
+  var i=s.cur,q=qs[i],p=s.perm[i],ans=s.ans[i],answered=ans!=null;
+  var h=top+'<p class="eyebrow">Question '+(i+1)+" sur "+n+'</p><p class="qtext">'+esc(q.q)+'</p><ol class="opts">';
+  p.forEach(function(oi,k){var o=q.o[oi],cls="opt";if(answered){if(o[1])cls+=" is-ok";else if(k===ans)cls+=" is-ko";else cls+=" dim"}h+='<li><button type="button" class="'+cls+'" data-k="'+k+'"'+(answered?" disabled":"")+'><span class="L">'+LET[k]+"</span><span>"+esc(o[0])+"</span></button></li>"});
+  h+="</ol>";
+  if(!answered){h+='<div class="actions"><button class="btn btn-ghost" type="button" data-q="hint">'+(s.hint[i]?"Masquer l'indice":"Indice")+"</button></div>";if(s.hint[i])h+='<div class="hintbox"><b>Indice :</b> '+esc(q.h)+"</div>"}
+  else{
+    var good=q.o[p[ans]][1],gk=p.findIndex(function(oi){return q.o[oi][1]});
+    h+='<p class="verdict '+(good?"ok":"ko")+'" role="status">'+(good?"Bonne réponse : +1 ✅":"Raté : −0,5. La bonne réponse était "+LET[gk]+".")+"</p>";
+    h+='<ul class="why">'+p.map(function(oi,k){var o=q.o[oi];return '<li><span class="L">'+LET[k]+" "+(o[1]?'<span class="ok-mark">✓</span>':'<span class="ko-mark">✗</span>')+"</span><span>"+esc(o[2])+"</span></li>"}).join("")+"</ul>";
+    h+='<div class="actions"><button class="btn btn-accent" type="button" data-q="next">'+(i+1<n?"Question suivante →":"Voir mon résultat")+"</button></div>";
+  }
+  el.innerHTML=h;
+}
+function qcmReview(el){
+  var b=el.dataset.block,s=qcmState(b),qs=QCM[b];
+  $(".qrev",el).innerHTML='<ol style="margin-top:14px;max-width:none">'+qs.map(function(q,i){var p=s.perm[i],a=s.ans[i],o=q.o[p[a]],gk=p.findIndex(function(oi){return q.o[oi][1]});return '<li style="margin-bottom:10px"><b>'+esc(q.q)+"</b><br>"+(o[1]?'<span class="ok-mark">✓</span> ':'<span class="ko-mark">✗</span> ')+"Ta réponse : "+LET[a]+". "+esc(o[0])+(o[1]?"":'<br><span class="ok-mark">✓</span> Bonne réponse : '+LET[gk]+". "+esc(q.o[p[gk]][0]))+'<br><span class="muted">'+esc(q.o[p[gk]][2])+"</span></li>"}).join("")+"</ol>";
+}
+function bindQcm(){
+  $$(".qcm").forEach(function(el){
+    qcmRender(el);
+    el.addEventListener("click",function(e){
+      var btn=e.target.closest("button");if(!btn)return;
+      var b=el.dataset.block,s=qcmState(b);
+      if(btn.dataset.k!=null&&s.ans[s.cur]==null){s.ans[s.cur]=+btn.dataset.k;store.set("qcm:"+b,s);qcmRender(el);refreshScores();return}
+      var a=btn.dataset.q;
+      if(a==="hint"){s.hint[s.cur]=!s.hint[s.cur];store.set("qcm:"+b,s);qcmRender(el)}
+      else if(a==="next"){s.cur++;store.set("qcm:"+b,s);qcmRender(el);refreshScores();var t=$(".qtext",el)||$(".qcm-end",el);if(t)el.scrollIntoView({block:"start",behavior:"smooth"})}
+      else if(a==="restart"){store.set("qcm:"+b,qcmNew(b));qcmRender(el);refreshScores()}
+      else if(a==="review"){qcmReview(el)}
+    });
+  });
+}
+function refreshScores(){
+  var tot=0,max=0;
+  BLOCKS.forEach(function(B){var r=qcmScore(B.id);tot+=r.score;max+=r.n;var st=$('[data-st="'+B.id+'"]');if(st){st.className="st"+(r.answered===r.n?" full":r.answered>0?" half":"");st.title=r.answered+"/"+r.n+" questions"}});
+  $("#gscore").textContent=fr(tot);$("#gmax").textContent=max;$("#gbar").style.width=Math.max(0,tot/max*100)+"%";
+  var hb=$("#home-blocks");
+  if(hb)hb.innerHTML=BLOCKS.map(function(B,i){var r=qcmScore(B.id);return '<a class="bcard" href="#'+B.v+'" data-go="'+B.v+'"><span class="bn">'+(i+1)+'</span><span><span class="bt">'+esc(B.t)+'</span><span class="bs" style="display:block">'+B.d+" · QCM "+r.answered+"/"+r.n+(r.answered?" · score "+fr(r.score):"")+'</span><span class="bm" style="display:block"><i style="width:'+(r.answered/r.n*100)+'%"></i></span></span></a>'}).join("");
+}
+
+/* ================= tube ================= */
+var TUBE=[["Matrice ADN",1,"La séquence d'ADN à amplifier."],["Amorces",1,"Le couple qui encadre la région à amplifier."],["ADN polymérase thermostable",1,"Elle allonge les amorces et résiste à 95 °C."],["dNTPs",1,"Les unités que la polymérase assemble."],["Tampon",1,"pH stable et cations cofacteurs (Mg²⁺, K⁺, NH₄⁺)."],["Hélicase",0,"Inutile : en PCR, c'est la température qui sépare les brins."],["Primase",0,"Inutile : on ajoute directement les amorces dans le tube."],["Fragments d'Okazaki",0,"C'est un détail de la réplication in vivo (lagging strand), pas un ingrédient."],["Marqueur de poids moléculaires",0,"Il sert sur le gel d'électrophorèse, après la PCR."]];
+function bindTube(){
+  var box=$("#tube-chips");if(!box)return;var order=shuffle(TUBE.map(function(_,i){return i}));
+  function draw(){box.innerHTML=order.map(function(i){return '<button type="button" aria-pressed="false" data-i="'+i+'">'+esc(TUBE[i][0])+"</button>"}).join("");$("#tube-fb").innerHTML=""}
+  draw();
+  box.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;b.setAttribute("aria-pressed",String(b.getAttribute("aria-pressed")!=="true"));b.classList.remove("good","bad")});
+  $("#tube-check").addEventListener("click",function(){
+    var ok=true,lines=[];
+    $$("button",box).forEach(function(b){var i=+b.dataset.i,sel=b.getAttribute("aria-pressed")==="true",should=!!TUBE[i][1];b.classList.remove("good","bad");if(sel!==should){ok=false;b.classList.add("bad");lines.push("<li>"+mark(false)+" <b>"+esc(TUBE[i][0])+"</b> : "+(should?"il manque dans ton tube. ":"n'a rien à faire dans le tube. ")+esc(TUBE[i][2])+"</li>")}else if(sel)b.classList.add("good")});
+    $("#tube-fb").innerHTML='<div class="fb '+(ok?"ok":"ko")+'">'+(ok?"<p><b>Tube parfait ✅</b> Matrice, amorces, polymérase thermostable, dNTPs, tampon. Il ne reste plus qu'à chauffer.</p>":"<p><b>Pas encore.</b></p><ul>"+lines.join("")+"</ul>")+"</div>";
+  });
+  $("#tube-reset").addEventListener("click",function(){order=shuffle(order);draw()});
+}
+
+/* ================= outils du bloc 3 ================= */
+function bindTools(){
+  var a=$("#calc-a"),b=$("#calc-b"),out=$("#calc-out");
+  function calc(){
+    var s1=clean(a.value),s2=clean(b.value),h="";
+    [[s1,"Amorce 1"],[s2,"Amorce 2"]].forEach(function(x){if(!x[0])return;var t=tm(x[0]);h+="<p><b>"+x[1]+"</b> ("+x[0].length+" nt) : "+tmDetail(x[0])+" "+(t>=50&&t<=60?mark(true)+" entre 50 et 60 °C":mark(false)+" hors de 50–60 °C")+(x[0].length<18||x[0].length>30?" · "+mark(false)+" longueur hors 18–30 nt":"")+"</p>"});
+    if(s1&&s2){var d=Math.abs(tm(s1)-tm(s2)),c=d<5&&[tm(s1),tm(s2)].every(function(t){return t>=50&&t<=60});h+="<p>ΔTm = "+d+" °C "+(d<5?mark(true):mark(false)+" (≥ 5 °C)")+" → couple <b>"+(c?"compatible":"non compatible")+"</b>"+(c?" · hybridation à "+Math.min(tm(s1),tm(s2))+" °C (Tm le plus bas)":"")+"</p>"}
+    out.innerHTML=h||"<p>Tape une séquence (A, T, G, C).</p>";
+  }
+  a.addEventListener("input",calc);b.addEventListener("input",calc);calc();
+  var ri=$("#rc-in"),ro=$("#rc-out");
+  function rcs(){var s=clean(ri.value);if(!s){ro.textContent="Tape une séquence.";return}var c=comp(s);ro.innerHTML="Brin du haut      : 5'-"+s+"-3'\nComplémentaire    : 3'-"+c+"-5'   ← écrit à l'envers\nAmorce reverse    : <b>5'-"+rev(c)+"-3'</b>   ← relu de 5' vers 3'"}
+  ri.addEventListener("input",rcs);rcs();
+}
+
+/* ================= atelier ================= */
+function pairTms(compat){
+  var t1,t2;
+  if(compat){t1=evenIn(50,60);do{t2=t1+pick([-4,-2,0,2,4])}while(t2<50||t2>60)}
+  else if(Math.random()<.5){t1=evenIn(50,54);t2=t1+pick([6,8])}
+  else{t1=pick([44,46,48,62,64,66]);t2=t1<50?t1+pick([2,4]):t1-pick([2,4])}
+  return [t1,t2];
+}
+function primerFor(t){var hi=Math.min(24,Math.floor(t/2)),lo=Math.max(18,Math.ceil(t/4));var L=lo+rand(hi-lo+1);return seqExactTm(L,t)}
+function isCompat(a,b){return a>=50&&a<=60&&b>=50&&b<=60&&Math.abs(a-b)<5}
+function drillStat(id){return store.get("drill:"+id,{ok:0,n:0})}
+var DRILLS=[
+{id:"tm",title:"Tm et compatibilité d'un couple",prep:"TD ex 3B, 6B",
+ intro:"Calcule le Tm des deux amorces avec Tm = 2(A+T) + 4(G+C), puis dis si le couple est compatible (chaque Tm entre 50 et 60 °C et ΔTm < 5 °C).",
+ gen:function(){var t=pairTms(Math.random()<.5),s1=primerFor(t[0]),s2=primerFor(t[1]);if(Math.random()<.5){var x=s1;s1=s2;s2=x}return{s1:s1,s2:s2}},
+ view:function(st){return '<div class="pair"><p><span class="tag">Amorce 1</span><span class="seq">5\'-'+st.s1+"-3'</span></p><p><span class=\"tag\">Amorce 2</span><span class=\"seq\">5'-"+st.s2+'-3\'</span></p></div><div class="fields"><label class="f" for="d-tm-a">Tm amorce 1 (°C)<input type="number" id="d-tm-a"></label><label class="f" for="d-tm-b">Tm amorce 2 (°C)<input type="number" id="d-tm-b"></label></div><fieldset><legend>Le couple est-il compatible ?</legend><label class="radio"><input type="radio" name="d-tm-c" value="oui"> Oui</label><label class="radio"><input type="radio" name="d-tm-c" value="non"> Non</label></fieldset>'},
+ check:function(st,el){var a=num($("#d-tm-a",el).value),b=num($("#d-tm-b",el).value),c=radioVal("d-tm-c",el),t1=tm(st.s1),t2=tm(st.s2),cp=isCompat(t1,t2);var o1=a===t1,o2=b===t2,o3=c===(cp?"oui":"non");return{ok:o1&&o2&&o3,html:"<ul><li>"+mark(o1)+" Amorce 1 : "+(o1?"":"tu as mis "+(isNaN(a)?"—":a)+". ")+tmDetail(st.s1)+"</li><li>"+mark(o2)+" Amorce 2 : "+(o2?"":"tu as mis "+(isNaN(b)?"—":b)+". ")+tmDetail(st.s2)+"</li><li>"+mark(o3)+" "+(cp?"Compatible":"Non compatible")+" : "+[t1,t2].map(function(t){return t+" °C "+(t>=50&&t<=60?"dans":"hors de")+" 50–60 °C"}).join(", ")+" ; ΔTm = "+Math.abs(t1-t2)+" °C "+(Math.abs(t1-t2)<5?"< 5":"≥ 5")+".</li></ul>"}},
+ sol:function(st){var t1=tm(st.s1),t2=tm(st.s2);return "<p>Amorce 1 : "+tmDetail(st.s1)+"<br>Amorce 2 : "+tmDetail(st.s2)+"<br>ΔTm = "+Math.abs(t1-t2)+" °C → <b>"+(isCompat(t1,t2)?"compatible":"non compatible")+"</b>.</p>"}},
+{id:"rc",title:"Écrire l'amorce reverse",prep:"TD ex 6B",
+ intro:"Voici la fin du brin du haut (écrite 5'→3'). La partie surlignée est la fin de la région à amplifier. Écris l'amorce reverse qui s'y hybride, dans le sens 5'→3'.",
+ gen:function(){var n=18+rand(5),E=seqExactTm(n,evenIn(50,58))||randSeq(n);return{E:E,ctx:randSeq(14)}},
+ view:function(st){return '<div class="seqwrap">5\'-…'+st.ctx+"<mark>"+st.E+"</mark>-3'</div><details><summary>Aide : afficher le brin du bas</summary><div class=\"inner\"><div class=\"seqwrap\" style=\"margin:10px 0 0\">3'-…"+comp(st.ctx)+"<mark>"+comp(st.E)+'</mark>-5\'</div></div></details><label class="f" for="d-rc-in" style="margin-top:10px">Amorce reverse (5\'→3\')<input type="text" class="seqin" id="d-rc-in" autocomplete="off" spellcheck="false"></label>'},
+ check:function(st,el){var a=clean($("#d-rc-in",el).value),g=rc(st.E),msg;if(a===g)return{ok:true,html:"<p>"+mark(true)+" <b>Exact.</b> 5'-"+g+"-3' (Tm = "+tm(g)+" °C, "+g.length+" nt).</p>"};
+  if(a===comp(st.E))msg="Tu as écrit le complémentaire sans l'inverser : ta séquence est en réalité écrite 3'→5'. Relis-la à l'envers.";
+  else if(a===rev(st.E))msg="Tu as inversé la séquence sans prendre le complémentaire.";
+  else if(a===st.E)msg="Tu as recopié le brin du haut : cette amorce se fixerait sur le brin du bas et partirait vers la droite, hors de la région.";
+  else if(!a)msg="Écris une séquence.";
+  else{var k=0;while(k<a.length&&a[k]===g[k])k++;msg="Ta séquence diffère à partir du nucléotide "+(k+1)+(a.length!==g.length?" (et elle fait "+a.length+" nt au lieu de "+g.length+")":"")+"."}
+  return{ok:false,html:"<p>"+mark(false)+" "+msg+"</p>"}},
+ sol:function(st){var c=comp(st.E);return '<div class="seqblock" style="margin:0">Fin du brin du haut : 5\'-'+st.E+"-3'\nComplémentaire      : 3'-"+c+"-5'\nAmorce reverse      : <b>5'-"+rev(c)+"-3'</b></div>"}},
+{id:"pair",title:"Choisir le bon couple d'amorces",prep:"exemple diapo 48, TD ex 6B",
+ intro:"Tu veux amplifier la séquence double brin ci-dessous. Choisis une amorce gauche et une amorce droite.",
+ gen:function(){var L,R;do{L=randSeq(12+rand(3));R=randSeq(12+rand(3))}while(new Set([L,comp(L),rev(L),rc(L)]).size<4||new Set([R,comp(R),rev(R),rc(R)]).size<4);return{L:L,R:R,lo:shuffle(["ok","comp","rev","rc"]),ro:shuffle(["ok","comp","rev","same"])}},
+ seqL:function(st,k){return{ok:st.L,comp:comp(st.L),rev:rev(st.L),rc:rc(st.L)}[k]},
+ seqR:function(st,k){return{ok:rc(st.R),comp:comp(st.R),rev:rev(st.R),same:st.R}[k]},
+ view:function(st){var d=this;return '<div class="seqblock">5\'- '+st.L+" - - - - - - - - - "+st.R+" -3'\n3'- "+comp(st.L)+" - - - - - - - - - "+comp(st.R)+' -5\'</div><div class="grid2"><fieldset><legend>Amorce gauche</legend>'+st.lo.map(function(k){return '<label class="radio"><input type="radio" name="d-pair-l" value="'+k+'"><code>5\'-'+d.seqL(st,k)+"-3'</code></label>"}).join("")+'</fieldset><fieldset><legend>Amorce droite</legend>'+st.ro.map(function(k){return '<label class="radio"><input type="radio" name="d-pair-r" value="'+k+'"><code>5\'-'+d.seqR(st,k)+"-3'</code></label>"}).join("")+"</fieldset></div>"},
+ WL:{ok:"Début du brin du haut recopié : elle s'hybride sur le brin du bas et la polymérase l'allonge vers la droite, dans la région.",comp:"Complémentaire non inversé : c'est le brin du bas lu de 3' vers 5', présenté comme du 5'→3'.",rev:"Début du brin du haut lu à l'envers : ni recopié, ni complémentaire dans le bon sens.",rc:"Début du brin du bas lu 5'→3' : elle s'hybriderait sur le brin du haut et partirait vers la gauche, hors de la région."},
+ WR:{ok:"Complémentaire inverse de la fin du brin du haut : elle s'hybride sur le brin du haut et part vers la gauche, dans la région.",same:"Fin du brin du haut recopiée : elle s'hybriderait sur le brin du bas et partirait vers la droite, hors de la région.",comp:"Complémentaire non inversé : écrit en réalité 3'→5'.",rev:"Fin du brin du haut lue à l'envers : ni recopiée, ni complémentaire dans le bon sens."},
+ check:function(st,el){var l=radioVal("d-pair-l",el),r=radioVal("d-pair-r",el);if(!l||!r)return{ok:false,html:"<p>Choisis une amorce de chaque côté.</p>",skip:true};var ol=l==="ok",or=r==="ok";return{ok:ol&&or,html:"<ul><li>"+mark(ol)+" Gauche : "+this.WL[l]+(ol?"":" La bonne : <code>5'-"+st.L+"-3'</code>.")+"</li><li>"+mark(or)+" Droite : "+this.WR[r]+(or?"":" La bonne : <code>5'-"+rc(st.R)+"-3'</code>.")+"</li></ul>"}},
+ sol:function(st){return "<p>Gauche : <code>5'-"+st.L+"-3'</code> (début du brin du haut recopié).<br>Droite : <code>5'-"+rc(st.R)+"-3'</code> (complémentaire inverse de "+st.R+").</p>"}},
+{id:"fix",title:"Corriger un couple incompatible",prep:"TD ex 3B",
+ intro:"Calcule les Tm. Le couple n'est pas compatible : modifie une amorce pour amplifier exactement la même région (garde son extrémité 5').",
+ gen:function(){for(var k=0;k<500;k++){var tR=pick([50,52,54]),R=primerFor(tR),Fl=20+rand(3),tF=evenIn(tR+6,Math.min(66,4*Fl)),F=seqExactTm(Fl,tF);if(!F)continue;var ok=[];for(var l=18;l<F.length;l++){var t=tm(F.slice(0,l));if(t>=50&&t<=60&&Math.abs(t-tR)<5)ok.push(l)}if(ok.length){var sw=Math.random()<.5;return{p:sw?[R,F]:[F,R],hi:sw?1:0}}}},
+ view:function(st){return '<div class="pair"><p><span class="tag">Amorce 1</span><span class="seq">5\'-'+st.p[0]+"-3'</span></p><p><span class=\"tag\">Amorce 2</span><span class=\"seq\">5'-"+st.p[1]+'-3\'</span></p></div><div class="fields"><label class="f" for="d-fix-a">Tm amorce 1 (°C)<input type="number" id="d-fix-a"></label><label class="f" for="d-fix-b">Tm amorce 2 (°C)<input type="number" id="d-fix-b"></label><label class="f" for="d-fix-w">Amorce que tu modifies<select id="d-fix-w"><option value="">—</option><option value="0">Amorce 1</option><option value="1">Amorce 2</option></select></label></div><label class="f" for="d-fix-s">Nouvelle séquence (5\'→3\')<input type="text" class="seqin" id="d-fix-s" autocomplete="off" spellcheck="false"></label>'},
+ check:function(st,el){var a=num($("#d-fix-a",el).value),b=num($("#d-fix-b",el).value),w=$("#d-fix-w",el).value,s=clean($("#d-fix-s",el).value);var t=[tm(st.p[0]),tm(st.p[1])],o1=a===t[0],o2=b===t[1];var v=validateFix(st.p,st.hi,w===""?-1:+w,s);return{ok:o1&&o2&&v.ok,html:"<ul><li>"+mark(o1)+" Amorce 1 : "+tmDetail(st.p[0])+"</li><li>"+mark(o2)+" Amorce 2 : "+tmDetail(st.p[1])+"</li><li>"+mark(v.ok)+" "+v.msg+"</li></ul>"}},
+ sol:function(st){return fixSolution(st.p,st.hi)}},
+{id:"prog",title:"Écrire le programme complet",prep:"TD ex 3C, exemple diapo 50",
+ intro:"Remplis le programme de la PCR (Taq : 1000 pb/min à 72 °C). Pour l'hybridation, prends le Tm le plus bas du couple, comme dans les corrections.",
+ gen:function(){var t1=evenIn(50,60),t2;do{t2=t1+pick([-4,-2,0,2,4])}while(t2<50||t2>60);return{F:primerFor(t1),R:primerFor(t2),size:100+rand(1901)}},
+ F:[["pi-T","Dénaturation initiale · °C"],["pi-d","Dénaturation initiale · min"],["pc","Nombre de cycles"],["pd-T","Dénaturation · °C"],["pd-d","Dénaturation · s"],["ph-T","Hybridation · °C"],["ph-d","Hybridation · s"],["pe-T","Élongation · °C"],["pe-d","Élongation · s"],["pf-T","Élongation finale · °C"],["pf-d","Élongation finale · min"]],
+ view:function(st){return '<div class="pair"><p><span class="tag">Forward</span><span class="seq">5\'-'+st.F+"-3'</span></p><p><span class=\"tag\">Reverse</span><span class=\"seq\">5'-"+st.R+"-3'</span></p><p><span class=\"tag\">Fragment</span><b>"+st.size+' pb</b></p></div><div class="fields">'+this.F.map(function(f){return '<label class="f" for="d-prog-'+f[0]+'">'+f[1]+'<input type="text" inputmode="decimal" id="d-prog-'+f[0]+'"></label>'}).join("")+"</div>"},
+ exp:function(st){var ta=Math.min(tm(st.F),tm(st.R)),el=60*st.size/1000;return{"pi-T":[95,95,"95"],"pi-d":[2,5,"2 à 5"],"pc":[30,35,"30 à 35"],"pd-T":[95,95,"95"],"pd-d":[30,30,"30"],"ph-T":[ta,ta,String(ta)+" (Tm le plus bas)"],"ph-d":[30,30,"30"],"pe-T":[72,72,"72"],"pe-d":[el-1,el+1,fr(el)+" ≈ "+Math.round(el)],"pf-T":[72,72,"72"],"pf-d":[5,10,"5 à 10"]}},
+ check:function(st,el){var E=this.exp(st),all=true,rows=this.F.map(function(f){var v=num($("#d-prog-"+f[0],el).value),e=E[f[0]],ok=v>=e[0]&&v<=e[1];if(!ok)all=false;return "<tr><td>"+mark(ok)+"</td><td>"+f[1]+"</td><td class=\"num\">"+(isNaN(v)?"—":fr(v))+"</td><td class=\"num\">"+e[2]+"</td></tr>"}).join("");return{ok:all,html:'<p>Tm forward = '+tm(st.F)+" °C, Tm reverse = "+tm(st.R)+" °C. Élongation : 60 × "+st.size+" / 1000 = "+fr(60*st.size/1000)+' s.</p><div class="tblwrap"><table><thead><tr><th></th><th>Champ</th><th class="num">Toi</th><th class="num">Attendu</th></tr></thead><tbody>'+rows+"</tbody></table></div>"}},
+ sol:function(st){var ta=Math.min(tm(st.F),tm(st.R)),e=60*st.size/1000;return '<div class="seqblock" style="margin:0">Dénaturation initiale    95 °C   2 à 5 min\n          ┌ Dénaturation     95 °C   30 s\n× 30 à 35 ┤ Hybridation      '+ta+' °C   30 s\n          └ Élongation       72 °C   '+fr(e)+" s ≈ "+Math.round(e)+" s\nÉlongation finale        72 °C   5 à 10 min</div>"}},
+{id:"mol",title:"Compter les molécules",prep:"TD ex 4",
+ intro:"Le nombre de molécules double à chaque cycle. Les amplicons d'intérêt n'apparaissent qu'au cycle 3.",
+ gen:function(){var k=pick(["one","one","many","amp"]);if(k==="one"){var n=1+rand(12);return{k:k,n:n,a:Math.pow(2,n),q:"En partant d'une seule molécule d'ADN, combien de molécules obtient-on après "+n+" cycle"+(n>1?"s":"")+" ?"}}if(k==="many"){var N=2+rand(4),m=1+rand(6);return{k:k,n:m,N:N,a:N*Math.pow(2,m),q:"En partant de "+N+" molécules d'ADN, combien de molécules obtient-on après "+m+" cycle"+(m>1?"s":"")+" ?"}}var c=1+rand(4);return{k:k,n:c,a:[0,0,2,8][c-1],q:"En partant d'une seule molécule, combien d'amplicons d'intérêt (deux brins courts appariés) y a-t-il à la fin du cycle "+c+" ?"}},
+ view:function(st){return '<p class="qtext" style="font-size:1rem">'+st.q+'</p><label class="f" for="d-mol" style="max-width:240px">Ta réponse<input type="number" id="d-mol"></label>'},
+ check:function(st,el){var v=num($("#d-mol",el).value),ok=v===st.a;return{ok:ok,html:"<p>"+mark(ok)+" "+this.expl(st)+"</p>"}},
+ expl:function(st){if(st.k==="one")return "2<sup>"+st.n+"</sup> = <b>"+st.a+"</b> molécules.";if(st.k==="many")return "Chacune des "+st.N+" molécules est doublée à chaque cycle : "+st.N+" × 2<sup>"+st.n+"</sup> = <b>"+st.a+"</b>.";return ["Cycle 1 : 2 molécules (original + long), aucun amplicon d'intérêt.","Cycle 2 : 4 molécules, les brins courts sont appariés à des brins longs : aucun amplicon d'intérêt.","Cycle 3 : 8 molécules dont les <b>2</b> premiers amplicons d'intérêt.","Cycle 4 : 16 molécules dont <b>8</b> amplicons d'intérêt."][st.n-1]+' <a href="#bloc4" data-go="bloc4">Revoir le simulateur</a>.'},
+ sol:function(st){return "<p>"+this.expl(st)+"</p>"}},
+{id:"micro",title:"Microsatellites : motif, répétitions, gel",prep:"TD ex 6",
+ intro:"Même région chez trois individus homozygotes. Trouve le motif répété, compte les répétitions, puis prédis le gel.",
+ gen:function(){var motifs=["CTT","AAT","GATA","CA","TTG","AGC","GT","CAG","TCTA","ATC"];for(var z=0;z<400;z++){var m=pick(motifs),b=3+rand(5),ks=shuffle([b,b+1+rand(2),b+3+rand(2)]).slice(0,3);var f5=randSeq(18+rand(5)),f3=randSeq(18+rand(5));if(f5[f5.length-1]===m[m.length-1]||f3[0]===m[0])continue;var S=ks.map(function(k){return f5+m.repeat(k)+f3});var good=S.every(function(s,i){return maxRepeat(s,m)===ks[i]});if(good)return{m:m,ks:ks,f5:f5,f3:f3,S:S}}},
+ view:function(st){return st.S.map(function(s,i){return '<p style="margin:8px 0 4px"><u>Individu '+(i+1)+"</u></p><div class=\"seqwrap\" style=\"margin:0\">"+s+"</div>"}).join("")+'<div class="fields"><label class="f" for="d-mi-m">Motif répété<input type="text" class="seqin" id="d-mi-m" autocomplete="off" spellcheck="false"></label><label class="f" for="d-mi-1">Répétitions · ind. 1<input type="number" id="d-mi-1"></label><label class="f" for="d-mi-2">Répétitions · ind. 2<input type="number" id="d-mi-2"></label><label class="f" for="d-mi-3">Répétitions · ind. 3<input type="number" id="d-mi-3"></label></div><label class="f" for="d-mi-o" style="max-width:320px">Quel individu a la bande qui migre le plus loin ?<select id="d-mi-o"><option value="">—</option><option value="0">Individu 1</option><option value="1">Individu 2</option><option value="2">Individu 3</option></select></label>'},
+ check:function(st,el){var m=clean($("#d-mi-m",el).value),rot=[];for(var i=0;i<st.m.length;i++)rot.push(st.m.slice(i)+st.m.slice(0,i));var om=m===st.m,omr=!om&&rot.indexOf(m)>=0;var ks=[1,2,3].map(function(i){return num($("#d-mi-"+i,el).value)});var ok=ks.map(function(k,i){return k===st.ks[i]});var mn=st.ks.indexOf(Math.min.apply(null,st.ks));var oo=$("#d-mi-o",el).value===String(mn);var all=(om||omr)&&ok.every(Boolean)&&oo;
+  return{ok:all,html:"<ul><li>"+mark(om||omr)+" Motif : <b>"+st.m+"</b>"+(omr?" (ta réponse "+m+" est le même motif décalé ; écris-le tel qu'il commence dans la séquence)":"")+"</li>"+st.ks.map(function(k,i){return "<li>"+mark(ok[i])+" Individu "+(i+1)+" : "+k+" répétitions</li>"}).join("")+"<li>"+mark(oo)+" Bande la plus basse : individu "+(mn+1)+" (le moins de répétitions, donc le fragment le plus court).</li></ul>"+this.gel(st)}},
+ gel:function(st){var L=st.S.map(function(s){return s.length}),mn=Math.min.apply(null,L),mx=Math.max.apply(null,L);return '<div class="fig" style="max-width:380px;margin-top:10px">'+gelSVG({min:mn-8,max:mx+6,laneW:78,sizes:L.map(function(l){return[l,l+" pb"]}),lanes:L.map(function(l,i){return{lab:"Ind. "+(i+1),bands:[[l]]}})})+'</div><p class="tiny">Tailles si les amorces sont aux deux extrémités des séquences affichées.</p>'},
+ sol:function(st){return st.S.map(function(s,i){return '<div class="seqwrap" style="margin:0 0 6px">'+st.f5+"<mark>"+st.m.repeat(st.ks[i])+"</mark>"+st.f3+"</div>"}).join("")+"<p>Motif <b>"+st.m+"</b> ; répétitions : "+st.ks.join(", ")+".</p>"+this.gel(st)}},
+{id:"del",title:"Lire un gel : délétion de 3 pb",prep:"TD ex 5",
+ intro:"Les amorces encadrent la zone d'une délétion de 3 pb (comme pour la mucoviscidose). Lis le gel.",
+ gen:function(){var N=pick([50,62,85,120,146,180,212]),n=4+rand(2),g;do{g=[];for(var i=0;i<n;i++)g.push(pick(["NN","NM","MM"]))}while(new Set(g).size<2);return{N:N,g:g}},
+ view:function(st){var N=st.N;var lanes=[{lab:"Témoin",bands:[[N]]}].concat(st.g.map(function(x,i){return{lab:"P"+(i+1),bands:x==="NN"?[[N]]:x==="MM"?[[N-3]]:[[N],[N-3]]}}));return "<p>Le témoin porte deux allèles normaux et donne un fragment de <b>"+N+' pb</b>.</p><div class="fig" style="max-width:520px">'+gelSVG({min:N-12,max:N+8,laneW:64,lanes:lanes})+'</div><label class="f" for="d-del-s" style="max-width:260px;margin-top:10px">Taille du fragment muté (pb)<input type="number" id="d-del-s"></label><div class="fields">'+st.g.map(function(_,i){return '<label class="f" for="d-del-'+i+'">Patient P'+(i+1)+'<select id="d-del-'+i+'"><option value="">—</option><option value="NN">2 allèles normaux</option><option value="NM">1 normal + 1 muté</option><option value="MM">2 allèles mutés (atteint)</option></select></label>'}).join("")+"</div>"},
+ L:{NN:"2 allèles normaux (une bande, au niveau du témoin)",NM:"1 normal + 1 muté (deux bandes)",MM:"2 allèles mutés : atteint (une bande, plus basse)"},
+ check:function(st,el){var d=this,s=num($("#d-del-s",el).value),os=s===st.N-3,all=os;var li=st.g.map(function(x,i){var v=$("#d-del-"+i,el).value,ok=v===x;if(!ok)all=false;return "<li>"+mark(ok)+" P"+(i+1)+" : "+d.L[x]+"</li>"}).join("");return{ok:all,html:"<ul><li>"+mark(os)+" Fragment muté : "+st.N+" − 3 = <b>"+(st.N-3)+" pb</b>, il migre un peu plus loin.</li>"+li+"</ul>"}},
+ sol:function(st){var d=this;return "<p>Fragment muté : "+(st.N-3)+" pb.</p><ul>"+st.g.map(function(x,i){return "<li>P"+(i+1)+" : "+d.L[x]+"</li>"}).join("")+"</ul>"}},
+{id:"crime",title:"Enquête : empreintes génétiques",prep:"diapo 60",
+ intro:"Compare l'ADN retrouvé sur la scène aux trois suspects. Il faut que toutes les bandes soient au même niveau.",
+ gen:function(){var pool=[110,125,140,155,170,185,200,215,230],S;do{S=[0,1,2].map(function(){return shuffle(pool).slice(0,2).sort(function(a,b){return b-a})})}while(new Set(S.map(String)).size<3);return{S:S,c:rand(3)}},
+ view:function(st){var lanes=[{lab:"Scène",bands:st.S[st.c].map(function(z){return[z]})},{lab:"A",bands:st.S[0].map(function(z){return[z]})},{lab:"B",bands:st.S[1].map(function(z){return[z]})},{lab:"C",bands:st.S[2].map(function(z){return[z]})},{lab:"M",bands:[100,110,125,140,155,170,185,200,215,230,250].map(function(z){return[z,.7]})}];return '<div class="fig" style="max-width:480px">'+gelSVG({min:95,max:260,laneW:66,lanes:lanes})+'</div><label class="f" for="d-cr" style="max-width:260px;margin-top:10px">Suspect qui correspond<select id="d-cr"><option value="">—</option><option value="0">Suspect A</option><option value="1">Suspect B</option><option value="2">Suspect C</option></select></label>'},
+ check:function(st,el){var v=$("#d-cr",el).value,ok=v===String(st.c);return{ok:ok,html:"<p>"+mark(ok)+" C'est le suspect <b>"+"ABC"[st.c]+"</b> : ses deux bandes sont exactement au niveau de celles de la scène. Pour les autres, au moins une bande diffère.</p>"}},
+ sol:function(st){return "<p>Suspect <b>"+"ABC"[st.c]+"</b>.</p>"}}
+];
+function validateFix(p,hi,w,s){
+  var lo=1-hi,tLo=tm(p[lo]),H=p[hi];
+  if(w<0)return{ok:false,msg:"Choisis l'amorce que tu modifies."};
+  if(!s)return{ok:false,msg:"Écris la nouvelle séquence."};
+  if(w===lo)return{ok:false,msg:"Raccourcir l'amorce au Tm le plus bas ferait encore baisser son Tm : c'est l'autre qu'il faut modifier."};
+  if(s===H)return{ok:false,msg:"Tu n'as rien modifié."};
+  if(H.indexOf(s)===0){var t=tm(s);if(s.length<18)return{ok:false,msg:"Bonne idée de raccourcir côté 3', mais ton amorce fait "+s.length+" nt : il en faut au moins 18."};if(t<50||t>60)return{ok:false,msg:"Raccourcie côté 3' : bien. Mais son Tm = "+t+" °C est hors de 50–60 °C."};if(Math.abs(t-tLo)>=5)return{ok:false,msg:"Raccourcie côté 3' : bien. Mais Tm = "+t+" °C, ΔTm = "+Math.abs(t-tLo)+" °C : encore ≥ 5 °C. Retire d'autres nucléotides."};return{ok:true,msg:"Nouvelle amorce 5'-"+s+"-3' ("+s.length+" nt) : "+tmDetail(s)+", ΔTm = "+Math.abs(t-tLo)+" °C. Extrémité 5' conservée : même région amplifiée."}}
+  if(H.slice(-s.length)===s)return{ok:false,msg:"Tu as retiré des nucléotides côté 5' : la région amplifiée commencerait plus loin. Retire-les côté 3' (à la fin de la séquence)."};
+  if(s.indexOf(H)===0)return{ok:false,msg:"Tu as ajouté des nucléotides : ça augmente le Tm, et on ne connaît pas la suite de la séquence."};
+  return{ok:false,msg:"Ta séquence ne correspond pas à l'amorce raccourcie par son extrémité 3'."};
+}
+function fixSolution(p,hi){var lo=1-hi,tLo=tm(p[lo]),H=p[hi],out=[];for(var l=18;l<H.length;l++){var s=H.slice(0,l),t=tm(s);if(t>=50&&t<=60&&Math.abs(t-tLo)<5)out.push("<li><code>5'-"+s+"-3'</code> · "+l+" nt · Tm = "+t+" °C · ΔTm = "+Math.abs(t-tLo)+" °C</li>")}return "<p>Amorce "+(hi+1)+" (Tm = "+tm(H)+" °C) trop haute face à l'amorce "+(lo+1)+" ("+tLo+" °C). On la raccourcit par son extrémité 3'. Versions valables :</p><ul>"+out.join("")+"</ul>"}
+function mountDrills(){
+  var box=$("#drills"),toc=$("#drill-toc");if(!box)return;
+  toc.innerHTML=DRILLS.map(function(d,i){return '<a class="chip" href="#atelier" data-scroll="dr-'+d.id+'">'+(i+1)+". "+esc(d.title)+"</a>"}).join("");
+  DRILLS.forEach(function(d,i){
+    var el=document.createElement("article");el.className="drill";el.id="dr-"+d.id;box.appendChild(el);
+    var st=d.gen(),counted=false;
+    el.innerHTML='<div class="d-head"><p class="eyebrow" style="margin:0">Atelier '+(i+1)+" · prépare "+esc(d.prep)+'</p><p class="d-stat"></p></div><h3>'+esc(d.title)+'</h3><p class="muted" style="font-size:.93rem">'+esc(d.intro)+'</p><div class="d-body"></div><div class="actions"><button class="btn" type="button" data-a="check">Vérifier</button><button class="btn btn-ghost" type="button" data-a="sol">Voir la solution</button><button class="btn btn-accent" type="button" data-a="new">Nouvel exercice</button></div><div class="d-fb"></div>';
+    function stat(){var s=drillStat(d.id);$(".d-stat",el).textContent=s.n?("Réussis du premier coup : "+s.ok+" / "+s.n):"Pas encore tenté"}
+    function render(){$(".d-body",el).innerHTML=d.view(st);$(".d-fb",el).innerHTML="";counted=false;stat()}
+    el.addEventListener("click",function(e){var b=e.target.closest("button[data-a]");if(!b)return;var a=b.dataset.a;
+      if(a==="new"){st=d.gen();render();var f=$("input,select",$(".d-body",el));if(f)f.focus({preventScroll:true})}
+      else if(a==="check"){var r=d.check(st,el);if(!counted&&!r.skip){counted=true;var s=drillStat(d.id);s.n++;if(r.ok)s.ok++;store.set("drill:"+d.id,s);stat()}$(".d-fb",el).innerHTML='<div class="fb '+(r.skip?"neutral":r.ok?"ok":"ko")+'" role="status">'+(r.ok?"<p><b>Réussi ✅</b></p>":"")+r.html+"</div>"}
+      else if(a==="sol"){if(!counted){counted=true;var s2=drillStat(d.id);s2.n++;store.set("drill:"+d.id,s2);stat()}$(".d-fb",el).innerHTML='<div class="fb neutral" role="status"><p><b>Solution</b></p>'+d.sol(st)+"</div>"}
+    });
+    render();
+  });
+}
+
+/* ================= TD ================= */
+function tdFb(n,ok,html){$('[data-tdfb="'+n+'"]').innerHTML='<div class="fb '+(ok?"ok":"ko")+'" role="status">'+html+"</div>"}
+var TD={
+ 1:function(){var v=radioVal("td1");if(!v)return tdFb(1,false,"<p>Choisis une réponse.</p>");var ok=v==="sb";tdFb(1,ok,"<p>"+mark(ok)+" "+(ok?"Oui, simple brin. N'oublie pas le « pourquoi » : les liaisons hydrogène entre les bases ne résistent pas à 95 °C.":"Non : à 95 °C, l'ADN est dénaturé. Relis le bloc 2.1 et la courbe.")+"</p>")},
+ 3:function(){
+  var F="GTACTATCGATCGATTGGGC",R="ATAATGATCGCTACTAGTAT",out=[],all=true;
+  var a=radioVal("td3a"),oa=a==="53";out.push("<li>"+mark(oa)+" A : "+(oa?"5'→3', c'est la convention quand rien n'est indiqué.":"Quand rien n'est indiqué, une amorce est écrite 5'→3'.")+"</li>");
+  var t1=num($("#td3-tm1").value),t2=num($("#td3-tm2").value),o1=t1===60,o2=t2===52;out.push("<li>"+mark(o1)+" Tm de la 1<sup>re</sup> amorce "+(o1?"= 60 °C.":"incorrect. Compte à nouveau A+T et G+C (20 nt au total).")+"</li>");out.push("<li>"+mark(o2)+" Tm de la 2<sup>e</sup> amorce "+(o2?"= 52 °C.":"incorrect. Compte à nouveau A+T et G+C (20 nt au total).")+"</li>");
+  var c=radioVal("td3c"),oc=c==="non";out.push("<li>"+mark(oc)+" Compatibilité : "+(oc?"non, ΔTm = 8 °C ≥ 5 °C.":"regarde ΔTm entre tes deux Tm.")+"</li>");
+  var w=$("#td3-which").value,v=validateFix([F,R],0,w===""?-1:(+w-1),clean($("#td3-new").value));out.push("<li>"+mark(v.ok)+" Modification : "+v.msg+"</li>");
+  var el=num($("#td3-el").value),oe=el>=55.9&&el<=57,ta=num($("#td3-ta").value),ot=ta===52;out.push("<li>"+mark(oe)+" Élongation : "+(oe?"60 × 940 / 1000 = 56,4 s ≈ 56 s.":"pose le produit en croix 1000 pb → 60 s.")+"</li>");out.push("<li>"+mark(ot)+" Hybridation : "+(ot?"52 °C, le Tm le plus bas (les deux amorces sont à 52 °C après modification).":"prends le Tm le plus bas du couple modifié.")+"</li>");
+  all=oa&&o1&&o2&&oc&&v.ok&&oe&&ot;tdFb(3,all,(all?"<p><b>Tout est juste ✅</b> Compare ton programme rédigé avec la correction.</p>":"")+"<ul>"+out.join("")+"</ul>")},
+ 4:function(){var exp=[2,4,8,16],ok=true,li=exp.map(function(e,i){var v=num($("#td4-"+(i+1)).value),o=v===e;if(!o)ok=false;return "<li>"+mark(o)+" Cycle "+(i+1)+(o?" : "+e+" molécules.":" : ce n'est pas ça. Le nombre double à chaque cycle.")+"</li>"}).join("");tdFb(4,ok,"<ul>"+li+"</ul>"+(ok?"<p>Pour le schéma, compare avec la correction (et le simulateur du bloc 4).</p>":""))},
+ 5:function(){var v=radioVal("td5"),d=num($("#td5-d").value),ov=v==="mut",od=d===3;tdFb(5,ov&&od,"<ul><li>"+mark(od)+" Délétion : "+(od?"3 pb (C, T, T), la Phe disparaît.":"compare les deux séquences : combien de nucléotides manquent dans l'encadré ?")+"</li><li>"+mark(ov)+" Gel : "+(ov?"l'allèle muté donne un fragment 3 pb plus court, qui migre plus loin.":"le fragment le plus court migre le plus loin.")+"</li></ul>")},
+ 6:function(){
+  var left="ATTCGATCATGCTCCAGGCTAAGA",right="CGCACTTTAACGATTTAACGGCCGAT",out=[];
+  var m=clean($("#td6-m").value),om=m==="CTT",omr=!om&&(m==="TTC"||m==="TCT");out.push("<li>"+mark(om||omr)+" Motif : "+(om?"CTT.":omr?"c'est le même motif décalé ; écris-le tel qu'il commence dans la séquence : CTT.":"aligne les trois séquences et cherche ce qui se répète au milieu.")+"</li>");
+  var ks=[6,7,8],ok=[1,2,3].map(function(i){return num($("#td6-k"+i).value)===ks[i-1]});out.push("<li>"+mark(ok.every(Boolean))+" Répétitions : "+(ok.every(Boolean)?"6, 7 et 8.":"recompte les CTT de chaque individu (commence juste après …AAGA).")+"</li>");
+  var f=clean($("#td6-f").value),r=clean($("#td6-r").value),of=false,or=false,mf,mr;
+  if(!f)mf="Écris une amorce forward.";else if(left.indexOf(f)>=0){if(f.length<18)mf="Forward trop courte ("+f.length+" nt, il en faut 18 à 30).";else{of=true;mf="Forward 5'-"+f+"-3' : dans la région commune avant les répétitions, "+f.length+" nt, Tm = "+tm(f)+" °C."}}else if(TD6[0].indexOf(f)>=0)mf="Ta forward empiète sur le microsatellite : elle doit être entièrement avant les répétitions, dans la région identique chez les trois.";else if(left.indexOf(rc(f))>=0)mf="Ta forward est le complémentaire inverse du début : pour la forward, on recopie le début tel quel.";else mf="Ta forward ne correspond pas au début de la séquence.";
+  if(!r)mr="Écris une amorce reverse.";else if(right.indexOf(rc(r))>=0){if(r.length<18)mr="Reverse trop courte ("+r.length+" nt, il en faut 18 à 30).";else{or=true;mr="Reverse 5'-"+r+"-3' : complémentaire inverse de la région commune après les répétitions, "+r.length+" nt, Tm = "+tm(r)+" °C."}}else if(right.indexOf(r)>=0)mr="Tu as recopié la fin de la séquence : pour la reverse, il faut son complémentaire inverse.";else if(right.indexOf(rev(r))>=0)mr="Ta reverse est le complémentaire non inversé : relis-la à l'envers.";else if(TD6[0].indexOf(rc(r))>=0)mr="Ta reverse empiète sur le microsatellite : elle doit être entièrement après les répétitions.";else mr="Ta reverse ne correspond pas au complémentaire inverse de la fin de la séquence.";
+  out.push("<li>"+mark(of)+" "+mf+"</li>");out.push("<li>"+mark(or)+" "+mr+"</li>");
+  var oc=false;if(of&&or){var a=tm(f),b=tm(r);oc=isCompat(a,b);out.push("<li>"+mark(oc)+" Couple : Tm "+a+" et "+b+" °C, ΔTm = "+Math.abs(a-b)+" °C "+(oc?"→ compatible.":"→ non compatible (50–60 °C et ΔTm < 5 °C). Ajuste la longueur.")+"</li>")}
+  var o=$("#td6-o").value,oo=o==="1";out.push("<li>"+mark(oo)+" Gel : "+(oo?"individu 1, le moins de répétitions donc le fragment le plus court.":"le fragment le plus court (le moins de répétitions) migre le plus loin.")+"</li>");
+  var all=(om||omr)&&ok.every(Boolean)&&of&&or&&oc&&oo;tdFb(6,all,(all?"<p><b>Tout est juste ✅</b> Ton couple peut être différent de celui de la correction tant qu'il respecte les règles.</p>":"")+"<ul>"+out.join("")+"</ul>")}
+};
+function bindTD(){$$("[data-td]").forEach(function(b){b.addEventListener("click",function(){TD[b.dataset.td]()})})}
+
+/* ================= navigation ================= */
+var VIEWS=["accueil","bloc1","bloc2","bloc3","bloc4","bloc5","bloc6","atelier","td"];
+function show(id,anchor){
+  if(VIEWS.indexOf(id)<0)id="accueil";
+  VIEWS.forEach(function(v){var el=$("#v-"+v);if(el)el.hidden=v!==id});
+  $$(".nav a").forEach(function(a){if(a.dataset.go===id)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  var cur=$('.nav a[aria-current="page"]');if(cur&&cur.scrollIntoView&&window.innerWidth<=900)cur.scrollIntoView({block:"nearest",inline:"center"});
+  store.set("view",id);
+  try{history.replaceState(null,"","#"+id)}catch(e){}
+  if(anchor){var t=document.getElementById(anchor);if(t)setTimeout(function(){t.scrollIntoView({block:"start"})},30)}else window.scrollTo(0,0);
+}
+document.addEventListener("click",function(e){
+  var a=e.target.closest("a[data-go],a[data-goto],a[data-scroll]");if(!a)return;
+  e.preventDefault();
+  if(a.dataset.scroll){var t=document.getElementById(a.dataset.scroll);if(t)t.scrollIntoView({block:"start"});return}
+  if(a.dataset.goto){show("td",a.dataset.goto);return}
+  show(a.dataset.go);
+});
+window.addEventListener("hashchange",function(){var h=location.hash.slice(1);if(VIEWS.indexOf(h)>=0)show(h)});
+
+/* brouillons */
+function bindDrafts(){$$("textarea[data-save]").forEach(function(t){var k="draft:"+t.id;t.value=store.get(k,"");t.addEventListener("input",function(){store.set(k,t.value)})})}
+/* reset */
+function bindReset(){var z=$("#reset-zone");z.addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;if(b.id==="reset-btn"){z.innerHTML='<span class="confirm"><span>Effacer scores, réponses et brouillons ?</span><button class="btn" type="button" data-r="yes">Oui, tout effacer</button><button class="btn btn-ghost" type="button" data-r="no">Annuler</button></span>'}else if(b.dataset.r==="yes"){store.clear();location.reload()}else if(b.dataset.r==="no"){z.innerHTML='<button class="btn btn-ghost" id="reset-btn" type="button">Remettre ma progression à zéro</button>'}})}
+
+/* init */
+renderFigs();
+$$("[data-sim]").forEach(function(el){mountSim(el,el.dataset.sim)});
+bindQcm();bindTube();bindTools();mountDrills();bindTD();bindDrafts();bindReset();refreshScores();
+var h=location.hash.slice(1);show(VIEWS.indexOf(h)>=0?h:store.get("view","accueil"));
+})();
+</script>
+
+</body>
+</html>
